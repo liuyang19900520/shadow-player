@@ -1,12 +1,13 @@
 import SwiftUI
 
-/// 自定义进度条：显示已播进度、可拖动，并在轨道上标出 A 起点 / B 终点及循环区间。
+/// Custom scrubber: shows playback progress, is draggable, and marks the A start
+/// point / B end point and the loop range on the track.
 struct ABScrubber: View {
     let currentTime: Double
     let duration: Double
     let pointA: Double?
     let pointB: Double?
-    /// 拖动结束后回调 seek。
+    /// Callback to seek when dragging ends.
     let onSeek: (Double) -> Void
 
     @State private var isDragging = false
@@ -25,12 +26,12 @@ struct ABScrubber: View {
             let bX = pointB.map { ratio($0) * width }
 
             ZStack(alignment: .leading) {
-                // 背景轨道
+                // Background track
                 Capsule()
                     .fill(Color.white.opacity(0.22))
                     .frame(height: trackHeight)
 
-                // A-B 循环区间高亮
+                // A-B loop range highlight
                 if let aX, let bX {
                     Capsule()
                         .fill(Color.accentColor.opacity(0.55))
@@ -38,23 +39,23 @@ struct ABScrubber: View {
                         .offset(x: aX)
                 }
 
-                // 已播放进度
+                // Played progress
                 Capsule()
                     .fill(Color.white)
                     .frame(width: progress, height: trackHeight)
 
-                // A 标记
+                // A marker
                 if let aX {
                     marker(color: .green, letter: "A")
                         .offset(x: aX - 1)
                 }
-                // B 标记
+                // B marker
                 if let bX {
                     marker(color: .orange, letter: "B")
                         .offset(x: bX - 1)
                 }
 
-                // 拖动圆点
+                // Draggable thumb
                 Circle()
                     .fill(Color.white)
                     .frame(width: thumbSize, height: thumbSize)

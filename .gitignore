@@ -18,3 +18,6 @@ xcuserdata/
 *.mode2v3
 *.perspectivev3
 *.pbxuser
+
+# Generated icon output
+scripts/icon-1024.png

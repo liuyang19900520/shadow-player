@@ -1,6 +1,7 @@
 import Foundation
 
-/// 最近播放列表：持久化到 UserDefaults，最近播放的排最前。
+/// Recent-playback list: persisted to UserDefaults (asset identifiers only),
+/// most recently played first.
 final class RecentStore: ObservableObject {
     @Published private(set) var items: [PickedVideo] = []
 
@@ -23,16 +24,10 @@ final class RecentStore: ObservableObject {
             items = []
             return
         }
-
-        // 过滤掉文件已不存在的记录（缓存可能被系统清理）。
-        items = records.compactMap { record in
-            let url = PickedVideo.url(for: record.id)
-            guard FileManager.default.fileExists(atPath: url.path) else { return nil }
-            return PickedVideo(id: record.id, url: url, duration: record.duration)
-        }
+        items = records.map { PickedVideo(id: $0.id, duration: $0.duration) }
     }
 
-    /// 新选的视频加入列表最前（去重）。
+    /// Adds newly picked videos to the front of the list (deduplicated).
     func addMany(_ videos: [PickedVideo]) {
         guard !videos.isEmpty else { return }
         let existingIDs = Set(items.map(\.id))
@@ -41,7 +36,7 @@ final class RecentStore: ObservableObject {
         save()
     }
 
-    /// 播放某个视频后，把它移到最前。
+    /// Moves a video to the front after it starts playing.
     func bump(_ video: PickedVideo) {
         var list = items.filter { $0.id != video.id }
         list.insert(video, at: 0)
@@ -50,13 +45,8 @@ final class RecentStore: ObservableObject {
     }
 
     func remove(atOffsets offsets: IndexSet) {
-        let removed = offsets.map { items[$0] }
         items.remove(atOffsets: offsets)
         save()
-        // 顺手删掉缓存文件。
-        for video in removed {
-            try? FileManager.default.removeItem(at: video.url)
-        }
     }
 
     private func save() {

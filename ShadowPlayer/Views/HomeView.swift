@@ -1,31 +1,32 @@
 import SwiftUI
+import Photos
 
-/// 第一页：选择视频 + 最近播放列表。
+/// First screen: pick a video + recent-playback list.
 struct HomeView: View {
     @StateObject private var recent = RecentStore()
     @State private var showPicker = false
-    @State private var isImporting = false
+    @State private var showDeniedAlert = false
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
                     Button {
-                        showPicker = true
+                        selectVideos()
                     } label: {
-                        Label("选择视频", systemImage: "plus.circle.fill")
+                        Label("Select Video", systemImage: "plus.circle.fill")
                             .font(.body.weight(.medium))
                     }
                 }
 
                 if recent.items.isEmpty {
                     Section {
-                        Text("还没有播放记录，点上面「选择视频」开始。")
+                        Text("No videos yet. Tap “Select Video” above to start.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                 } else {
-                    Section("最近播放") {
+                    Section("Recent") {
                         ForEach(recent.items) { video in
                             NavigationLink(value: video) {
                                 row(video)
@@ -41,24 +42,25 @@ struct HomeView: View {
                 PlayerView(video: video, onStart: { recent.bump(video) })
             }
             .sheet(isPresented: $showPicker) {
-                VideoPicker(
-                    onBegin: { isImporting = true },
-                    onPicked: { added in
-                        recent.addMany(added)
-                        isImporting = false
-                    }
-                )
-                .ignoresSafeArea()
+                VideoPicker(onPicked: { recent.addMany($0) })
+                    .ignoresSafeArea()
             }
-            .overlay {
-                if isImporting { importingOverlay }
+            .alert("Can’t Access Photos", isPresented: $showDeniedAlert) {
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Please allow ShadowPlayer to access your photos in Settings to select and play videos.")
             }
         }
     }
 
     private func row(_ video: PickedVideo) -> some View {
         HStack(spacing: 12) {
-            ThumbnailView(url: video.url)
+            ThumbnailView(assetID: video.id)
                 .frame(width: 72, height: 48)
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             Text(formatTime(video.duration))
@@ -71,17 +73,15 @@ struct HomeView: View {
         .padding(.vertical, 4)
     }
 
-    private var importingOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.4).ignoresSafeArea()
-            VStack(spacing: 12) {
-                ProgressView()
-                Text("正在导入…")
-                    .font(.subheadline)
-                    .foregroundStyle(.white)
+    /// Requests photo-library permission, then opens the picker.
+    private func selectVideos() {
+        Task {
+            let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+            if status == .authorized || status == .limited {
+                showPicker = true
+            } else {
+                showDeniedAlert = true
             }
-            .padding(24)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
         }
     }
 }

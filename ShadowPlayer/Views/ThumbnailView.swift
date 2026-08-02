@@ -1,9 +1,9 @@
 import SwiftUI
-import AVFoundation
+import Photos
 
-/// 从视频文件生成缩略图。
+/// Loads a thumbnail from a photo-library asset identifier.
 struct ThumbnailView: View {
-    let url: URL
+    let assetID: String
     var maxSize: CGSize = CGSize(width: 400, height: 400)
 
     @State private var image: UIImage?
@@ -24,29 +24,35 @@ struct ThumbnailView: View {
             .frame(width: geo.size.width, height: geo.size.height)
             .clipped()
         }
-        .task(id: url) { await load() }
+        .task(id: assetID) { await load() }
     }
 
     private func load() async {
-        let asset = AVURLAsset(url: url)
-        let generator = AVAssetImageGenerator(asset: asset)
-        generator.appliesPreferredTrackTransform = true
-        generator.maximumSize = maxSize
-        let time = CMTime(seconds: 1, preferredTimescale: 600)
+        guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [assetID], options: nil).firstObject else {
+            return
+        }
+        let options = PHImageRequestOptions()
+        options.isNetworkAccessAllowed = true
+        options.deliveryMode = .highQualityFormat
+        options.resizeMode = .fast
 
         image = await withCheckedContinuation { continuation in
-            generator.generateCGImageAsynchronously(for: time) { cgImage, _, _ in
-                if let cgImage {
-                    continuation.resume(returning: UIImage(cgImage: cgImage))
-                } else {
-                    continuation.resume(returning: nil)
-                }
+            var resumed = false
+            PHImageManager.default().requestImage(
+                for: asset,
+                targetSize: maxSize,
+                contentMode: .aspectFill,
+                options: options
+            ) { img, _ in
+                guard !resumed else { return }
+                resumed = true
+                continuation.resume(returning: img)
             }
         }
     }
 }
 
-/// 秒 -> "m:ss" / "h:mm:ss"
+/// Seconds -> "m:ss" / "h:mm:ss"
 func formatTime(_ seconds: Double) -> String {
     guard seconds.isFinite, seconds >= 0 else { return "0:00" }
     let total = Int(seconds.rounded())
