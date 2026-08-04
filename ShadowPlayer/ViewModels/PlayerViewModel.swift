@@ -1,7 +1,8 @@
 import AVFoundation
+import Photos
 import Combine
 
-/// 播放器核心逻辑：加载视频、播放控制、A-B 无限循环、长按连续快进/快退。
+/// Core player logic: video loading, playback control, infinite A-B loop, and press-and-hold scanning.
 final class PlayerViewModel: ObservableObject {
     let player = AVPlayer()
 
@@ -10,35 +11,87 @@ final class PlayerViewModel: ObservableObject {
     @Published var duration: Double = 0
     @Published var isReady = false
 
-    /// A-B 循环的起点 / 终点（秒）。只设 A 不循环；A、B 都有才循环。
+    /// A-B loop start / end (seconds). Setting only A does not loop; looping needs both A and B.
     @Published var pointA: Double?
     @Published var pointB: Double?
 
-    /// 短按快进 / 快退步长（秒）。
+    /// Tap seek step for forward / backward (seconds).
     let seekStep: Double = 3
+
+    /// Playback speed (0.8x–1.2x).
+    @Published var playbackRate: Float = 1.0
+    /// Available speed options.
+    let rateOptions: [Float] = [0.8, 0.9, 1.0, 1.1, 1.2]
+
+    func setRate(_ rate: Float) {
+        playbackRate = rate
+        if isPlaying { player.rate = rate }
+    }
 
     private var timeObserver: Any?
     private var endObserver: NSObjectProtocol?
     private var scanTimer: Timer?
     private var wasPlayingBeforeScan = false
 
+    /// Resume playback: tracks the current video identifier and the last saved progress.
+    private var videoID = ""
+    private var lastSavedProgress: Double = 0
+    private let progressKeyPrefix = "progress_"
+    private var progressKey: String { progressKeyPrefix + videoID }
+
     var isLooping: Bool { pointA != nil && pointB != nil }
 
-    // MARK: - 加载
+    // MARK: - Loading
 
     func load(video: PickedVideo) {
+        videoID = video.id
         duration = video.duration
         configureAudioSession()
 
-        let item = AVPlayerItem(url: video.url)
-        player.replaceCurrentItem(with: item)
-        addObservers(for: item)
-        player.play()
-        isPlaying = true
-        isReady = true
+        guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [video.id], options: nil).firstObject else {
+            return
+        }
+        let options = PHVideoRequestOptions()
+        options.isNetworkAccessAllowed = true
+        options.deliveryMode = .automatic
+
+        let resume = resumePosition()
+
+        PHImageManager.default().requestPlayerItem(forVideo: asset, options: options) { [weak self] item, _ in
+            guard let self, let item else { return }
+            DispatchQueue.main.async {
+                item.audioTimePitchAlgorithm = .timeDomain // keep voice pitch natural when changing speed
+                self.player.replaceCurrentItem(with: item)
+                self.addObservers(for: item)
+                // Resume from where it last stopped (start over if near the end).
+                if resume > 1, self.duration <= 0 || resume < self.duration - 2 {
+                    self.preciseSeek(to: resume)
+                    self.lastSavedProgress = resume
+                }
+                self.player.rate = self.playbackRate
+                self.isPlaying = true
+                self.isReady = true
+            }
+        }
     }
 
-    /// 设为 .playback：即使手机侧边静音拨片打开也能出声。
+    // MARK: - Resume playback
+
+    private func resumePosition() -> Double {
+        UserDefaults.standard.double(forKey: progressKey)
+    }
+
+    /// Saves the current progress; clears the record once playback reaches the end.
+    private func saveProgress() {
+        guard !videoID.isEmpty, currentTime.isFinite else { return }
+        if duration > 0, currentTime >= duration - 2 {
+            UserDefaults.standard.removeObject(forKey: progressKey)
+        } else if currentTime > 1 {
+            UserDefaults.standard.set(currentTime, forKey: progressKey)
+        }
+    }
+
+    /// Use .playback so audio plays even when the hardware silent switch is on.
     private func configureAudioSession() {
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.playback, mode: .moviePlayback)
@@ -52,14 +105,20 @@ final class PlayerViewModel: ObservableObject {
             let t = time.seconds
             if t.isFinite { self.currentTime = t }
 
-            // 时长兜底：若选取时没拿到时长，从 player 补上。
+            // Duration fallback: if it wasn't available at pick time, fill it from the player.
             if self.duration <= 0, let d = self.player.currentItem?.duration.seconds, d.isFinite, d > 0 {
                 self.duration = d
             }
 
-            // A-B 循环：播到 B 就跳回 A。
+            // A-B loop: jump back to A once playback reaches B.
             if let a = self.pointA, let b = self.pointB, t >= b - 0.03 {
                 self.preciseSeek(to: a)
+            }
+
+            // Save progress every 5 seconds.
+            if abs(t - self.lastSavedProgress) >= 5 {
+                self.lastSavedProgress = t
+                self.saveProgress()
             }
         }
 
@@ -68,25 +127,28 @@ final class PlayerViewModel: ObservableObject {
             object: item,
             queue: .main
         ) { [weak self] _ in
-            self?.isPlaying = false
+            guard let self else { return }
+            self.isPlaying = false
+            self.saveProgress() // clear progress on completion so it starts over next time
         }
     }
 
-    // MARK: - 播放控制
+    // MARK: - Playback control
 
     func playPause() {
         if isPlaying {
             player.pause()
+            isPlaying = false
         } else {
             if duration > 0, currentTime >= duration - 0.1 {
                 preciseSeek(to: 0)
             }
-            player.play()
+            player.rate = playbackRate
+            isPlaying = true
         }
-        isPlaying.toggle()
     }
 
-    /// 短按：精确跳 delta 秒。
+    /// Tap: precisely jump by delta seconds.
     func seekBy(_ delta: Double) {
         seek(to: currentTime + delta)
     }
@@ -105,9 +167,9 @@ final class PlayerViewModel: ObservableObject {
         max(0, min(time, duration > 0 ? duration : time))
     }
 
-    // MARK: - 长按连续快进/快退
+    // MARK: - Press-and-hold continuous scan
 
-    /// 长按开始：每 0.1s 跳约 0.5s，即约 5 倍速扫描。
+    /// Hold begins: jump ~0.5s every 0.1s, i.e. roughly 5x scanning.
     func startScan(forward: Bool) {
         wasPlayingBeforeScan = isPlaying
         player.pause()
@@ -118,7 +180,7 @@ final class PlayerViewModel: ObservableObject {
             let delta: Double = forward ? 0.5 : -0.5
             let target = self.clamp(self.currentTime + delta)
             self.currentTime = target
-            // 扫描用容差 seek，更流畅。
+            // Use tolerant seek while scanning for smoother motion.
             self.player.seek(
                 to: CMTime(seconds: target, preferredTimescale: 600),
                 toleranceBefore: CMTime(seconds: 0.25, preferredTimescale: 600),
@@ -127,39 +189,40 @@ final class PlayerViewModel: ObservableObject {
         }
     }
 
-    /// 松手：停止扫描，恢复之前的播放状态。
+    /// Release: stop scanning and restore the previous playback state.
     func stopScan() {
         scanTimer?.invalidate()
         scanTimer = nil
         if wasPlayingBeforeScan {
-            player.play()
+            player.rate = playbackRate
             isPlaying = true
         }
     }
 
     // MARK: - A / B / C
 
-    /// 设 A 起点。若已有 B 且 B <= A，则清除 B。
+    /// Set the A start point. Clears B if it already exists and B <= A.
     func setPointA() {
         pointA = currentTime
         if let b = pointB, b <= currentTime { pointB = nil }
     }
 
-    /// 设 B 终点。必须先有 A，且 B 要在 A 之后。
+    /// Set the B end point. Requires A first, and B must be after A.
     func setPointB() {
         guard let a = pointA, currentTime > a else { return }
         pointB = currentTime
     }
 
-    /// 取消循环，从当前位置继续正常播放。
+    /// Cancel the loop and resume normal playback from the current position.
     func cancelAB() {
         pointA = nil
         pointB = nil
     }
 
-    // MARK: - 清理
+    // MARK: - Cleanup
 
     func cleanup() {
+        saveProgress() // save progress when leaving the player
         scanTimer?.invalidate()
         scanTimer = nil
         if let timeObserver {
