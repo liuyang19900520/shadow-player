@@ -17,20 +17,27 @@ shadowing / language practice and drilling a passage over and over.
   (~5x), release to stop
 - **Playback speed**: 0.8x–1.2x, with natural voice pitch
 - **Resume playback**: continues from where you left off
-- **Background audio**: keeps playing (A-B loop included) after you swipe up to
-  the home screen — audio only
+- **Picture in Picture**: swipe up to the home screen and the video keeps
+  playing (A-B loop included) in a floating window; can also be started manually
+  from the player controls
 - **Fullscreen**: portrait by default, rotates to landscape in fullscreen
 - Plays sound even when the hardware silent switch is on
 
 ## Tech stack
 
-- SwiftUI + AVPlayer + PHPickerViewController
+- SwiftUI + AVPlayer + AVKit (Picture in Picture) + PHPickerViewController
 - iOS 16.0+
+
+Picture in Picture requires the `audio` background mode, declared in
+`ShadowPlayer-Info.plist`. It cannot be expressed as an `INFOPLIST_KEY_*` build
+setting, which is why the target uses a partial `Info.plist` alongside
+`GENERATE_INFOPLIST_FILE`.
 
 ## Running
 
 Open `ShadowPlayer.xcodeproj` in Xcode, select your own Team under
-**Signing & Capabilities**, and run on a physical device.
+**Signing & Capabilities**, and run on a physical device. Picture in Picture is
+unreliable in the Simulator, so test it on a real device.
 
 ## App icon
 
