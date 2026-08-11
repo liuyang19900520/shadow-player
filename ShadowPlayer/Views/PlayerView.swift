@@ -7,21 +7,24 @@ struct PlayerView: View {
     var onStart: () -> Void = {}
 
     @StateObject private var vm = PlayerViewModel()
+    @StateObject private var pip = PictureInPictureManager()
     @State private var isFullscreen = false
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            PlayerLayerView(player: vm.player)
+            PlayerLayerView(player: vm.player, pip: pip)
                 .ignoresSafeArea()
 
-            // Top-right: playback speed + fullscreen (always tappable)
+            // Top-left: the three low-frequency controls, kept out of the thumb's
+            // main path so the bottom bar stays dedicated to playback.
             VStack {
                 HStack(spacing: 12) {
-                    Spacer()
                     speedMenu
+                    if pip.isSupported { pipButton }
                     fullscreenButton
+                    Spacer()
                 }
                 Spacer()
             }
@@ -75,6 +78,22 @@ struct PlayerView: View {
 
     private func rateText(_ rate: Float) -> String {
         String(format: "%.1f×", rate)
+    }
+
+    private var pipButton: some View {
+        Button {
+            pip.toggle()
+        } label: {
+            Image(systemName: pip.isActive
+                  ? "pip.exit"
+                  : "pip.enter")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(.white)
+                .padding(10)
+                .background(Color.black.opacity(0.45), in: Circle())
+        }
+        .disabled(!pip.isPossible)
+        .opacity(pip.isPossible ? 1 : 0.4)
     }
 
     private var fullscreenButton: some View {
