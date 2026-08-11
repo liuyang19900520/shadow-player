@@ -6,6 +6,7 @@ struct PlayerView: View {
     /// Called when playback starts (used to update the recent list).
     var onStart: () -> Void = {}
 
+    @Environment(\.dismiss) private var dismiss
     @StateObject private var vm = PlayerViewModel()
     @StateObject private var pip = PictureInPictureManager()
     @State private var isFullscreen = false
@@ -17,10 +18,12 @@ struct PlayerView: View {
             PlayerLayerView(player: vm.player, pip: pip)
                 .ignoresSafeArea()
 
-            // Top-left: the three low-frequency controls, kept out of the thumb's
-            // main path so the bottom bar stays dedicated to playback.
+            // Top-left: back plus the low-frequency controls, kept out of the
+            // thumb's main path so the bottom bar stays dedicated to playback.
+            // Same cluster in both orientations, so fullscreen can go back too.
             VStack {
                 HStack(spacing: 12) {
+                    backButton
                     speedMenu
                     if pip.isSupported { pipButton }
                     fullscreenButton
@@ -38,9 +41,9 @@ struct PlayerView: View {
                 controls
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(isFullscreen)
-        .toolbar(isFullscreen ? .hidden : .visible, for: .navigationBar)
+        // The custom back button above replaces the system one in both orientations.
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
         .statusBarHidden(isFullscreen)
         .onAppear {
             vm.load(video: video)
@@ -49,6 +52,18 @@ struct PlayerView: View {
         .onDisappear {
             vm.cleanup()
             Orientation.set(.portrait) // restore portrait when leaving the player
+        }
+    }
+
+    private var backButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(.white)
+                .padding(10)
+                .background(Color.black.opacity(0.45), in: Circle())
         }
     }
 
