@@ -1,6 +1,7 @@
 import AVFoundation
 import Photos
 import Combine
+import MediaPlayer
 
 /// Core player logic: video loading, playback control, infinite A-B loop, and press-and-hold scanning.
 final class PlayerViewModel: ObservableObject {
@@ -26,6 +27,7 @@ final class PlayerViewModel: ObservableObject {
     func setRate(_ rate: Float) {
         playbackRate = rate
         if isPlaying { player.rate = rate }
+        updateNowPlaying()
     }
 
     private var timeObserver: Any?
@@ -62,6 +64,7 @@ final class PlayerViewModel: ObservableObject {
             DispatchQueue.main.async {
                 item.audioTimePitchAlgorithm = .timeDomain // keep voice pitch natural when changing speed
                 self.player.replaceCurrentItem(with: item)
+                self.applyAudioBoost(to: item)
                 self.addObservers(for: item)
                 // Resume from where it last stopped (start over if near the end).
                 if resume > 1, self.duration <= 0 || resume < self.duration - 2 {
@@ -71,8 +74,75 @@ final class PlayerViewModel: ObservableObject {
                 self.player.rate = self.playbackRate
                 self.isPlaying = true
                 self.isReady = true
+                self.setupRemoteCommands()
+                self.updateNowPlaying()
             }
         }
+    }
+
+    /// Amplify the item's audio above the normal 1.0 ceiling once its audio track loads.
+    private func applyAudioBoost(to item: AVPlayerItem) {
+        Task {
+            guard let track = try? await item.asset.loadTracks(withMediaType: .audio).first,
+                  let mix = AudioBoost.makeAudioMix(track: track) else { return }
+            await MainActor.run { item.audioMix = mix }
+        }
+    }
+
+    // MARK: - System Now Playing (lock-screen / Control Center media controls)
+
+    private var remoteCommandsConfigured = false
+    private var lastNowPlayingUpdate: Double = 0
+
+    private func setupRemoteCommands() {
+        guard !remoteCommandsConfigured else { return }
+        remoteCommandsConfigured = true
+        let center = MPRemoteCommandCenter.shared()
+
+        center.playCommand.addTarget { [weak self] _ in self?.resumePlayback(); return .success }
+        center.pauseCommand.addTarget { [weak self] _ in self?.pausePlayback(); return .success }
+        center.togglePlayPauseCommand.addTarget { [weak self] _ in self?.playPause(); return .success }
+
+        center.skipForwardCommand.preferredIntervals = [NSNumber(value: seekStep)]
+        center.skipForwardCommand.addTarget { [weak self] _ in
+            self?.seekBy(self?.seekStep ?? 3); return .success
+        }
+        center.skipBackwardCommand.preferredIntervals = [NSNumber(value: seekStep)]
+        center.skipBackwardCommand.addTarget { [weak self] _ in
+            self?.seekBy(-(self?.seekStep ?? 3)); return .success
+        }
+
+        center.changePlaybackPositionCommand.addTarget { [weak self] event in
+            guard let self, let e = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
+            self.seek(to: e.positionTime)
+            return .success
+        }
+
+        // Skip ±Ns instead of next/previous track.
+        center.nextTrackCommand.isEnabled = false
+        center.previousTrackCommand.isEnabled = false
+    }
+
+    /// Publish playback state to the system lock-screen / Control Center panel.
+    func updateNowPlaying() {
+        var info: [String: Any] = [:]
+        info[MPMediaItemPropertyTitle] = "ShadowPlayer"
+        info[MPMediaItemPropertyPlaybackDuration] = duration
+        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
+        info[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? Double(playbackRate) : 0.0
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+    }
+
+    private func teardownRemoteCommands() {
+        let center = MPRemoteCommandCenter.shared()
+        center.playCommand.removeTarget(nil)
+        center.pauseCommand.removeTarget(nil)
+        center.togglePlayPauseCommand.removeTarget(nil)
+        center.skipForwardCommand.removeTarget(nil)
+        center.skipBackwardCommand.removeTarget(nil)
+        center.changePlaybackPositionCommand.removeTarget(nil)
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        remoteCommandsConfigured = false
     }
 
     // MARK: - Resume playback
@@ -120,6 +190,12 @@ final class PlayerViewModel: ObservableObject {
                 self.lastSavedProgress = t
                 self.saveProgress()
             }
+
+            // Keep the Now Playing panel's elapsed time in sync (~1s).
+            if abs(t - self.lastNowPlayingUpdate) >= 1 {
+                self.lastNowPlayingUpdate = t
+                self.updateNowPlaying()
+            }
         }
 
         endObserver = NotificationCenter.default.addObserver(
@@ -130,22 +206,34 @@ final class PlayerViewModel: ObservableObject {
             guard let self else { return }
             self.isPlaying = false
             self.saveProgress() // clear progress on completion so it starts over next time
+            self.updateNowPlaying() // reflect the finished/paused state on the lock screen
         }
     }
 
     // MARK: - Playback control
 
     func playPause() {
-        if isPlaying {
-            player.pause()
-            isPlaying = false
-        } else {
-            if duration > 0, currentTime >= duration - 0.1 {
-                preciseSeek(to: 0)
-            }
-            player.rate = playbackRate
-            isPlaying = true
+        isPlaying ? pausePlayback() : resumePlayback()
+    }
+
+    func resumePlayback() {
+        guard !isPlaying else { return }
+        // Re-activate the audio session — when paused in the background iOS may
+        // deactivate it, which otherwise prevents resuming from the lock screen.
+        configureAudioSession()
+        if duration > 0, currentTime >= duration - 0.1 {
+            preciseSeek(to: 0)
         }
+        player.rate = playbackRate
+        isPlaying = true
+        updateNowPlaying()
+    }
+
+    func pausePlayback() {
+        guard isPlaying else { return }
+        player.pause()
+        isPlaying = false
+        updateNowPlaying()
     }
 
     /// Tap: precisely jump by delta seconds.
@@ -155,6 +243,7 @@ final class PlayerViewModel: ObservableObject {
 
     func seek(to time: Double) {
         preciseSeek(to: clamp(time))
+        updateNowPlaying()
     }
 
     private func preciseSeek(to time: Double) {
@@ -223,6 +312,7 @@ final class PlayerViewModel: ObservableObject {
 
     func cleanup() {
         saveProgress() // save progress when leaving the player
+        teardownRemoteCommands()
         scanTimer?.invalidate()
         scanTimer = nil
         if let timeObserver {
