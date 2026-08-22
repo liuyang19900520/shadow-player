@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Playback screen: video + scrubber (with A/B markers) + transport controls + A/B/C loop buttons.
 struct PlayerView: View {
@@ -9,49 +10,189 @@ struct PlayerView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var vm = PlayerViewModel()
     @StateObject private var pip = PictureInPictureManager()
+    @StateObject private var words: WordListStore
     @State private var isFullscreen = false
+    @State private var keyboardVisible = false
+    @State private var videoControlsVisible = true
+    @State private var hideControlsTask: Task<Void, Never>?
+
+    init(video: PickedVideo, onStart: @escaping () -> Void = {}) {
+        self.video = video
+        self.onStart = onStart
+        _words = StateObject(wrappedValue: WordListStore(videoID: video.id))
+    }
 
     var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-
-            PlayerLayerView(player: vm.player, pip: pip)
-                .ignoresSafeArea()
-
-            // Top-left: back plus the low-frequency controls, kept out of the
-            // thumb's main path so the bottom bar stays dedicated to playback.
-            // Same cluster in both orientations, so fullscreen can go back too.
-            VStack {
-                HStack(spacing: 12) {
-                    backButton
-                    speedMenu
-                    if pip.isSupported { pipButton }
-                    fullscreenButton
-                    Spacer()
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-
-            // Controls stay visible (landscape uses a right-side column to avoid covering subtitles)
+        Group {
             if isFullscreen {
-                landscapeControls
+                fullscreenLayout
             } else {
-                controls
+                portraitLayout
             }
         }
-        // The custom back button above replaces the system one in both orientations.
+        // The custom back button replaces the system one in both orientations.
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .statusBarHidden(isFullscreen)
         .onAppear {
             vm.load(video: video)
             onStart()
+            scheduleHideControls()
         }
         .onDisappear {
             vm.cleanup()
+            hideControlsTask?.cancel()
             Orientation.set(.portrait) // restore portrait when leaving the player
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            withAnimation(.easeOut(duration: 0.2)) { keyboardVisible = true }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation(.easeOut(duration: 0.2)) { keyboardVisible = false }
+        }
+    }
+
+    // MARK: - Portrait: stacked (menu / video+scrubber / word list / transport / A-B)
+
+    private var portraitLayout: some View {
+        VStack(spacing: 0) {
+            topMenuBar
+                .padding(.horizontal, 14)
+                .padding(.top, 6)
+                .padding(.bottom, 8)
+
+            videoWithControls
+
+            // Word list fills the freed space below the video.
+            WordListEditor(store: words)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            // A-B stays at the bottom; hidden while typing to give the word list room.
+            if !keyboardVisible {
+                abRow
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+                    .padding(.bottom, 10)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .background(Color.black.ignoresSafeArea())
+    }
+
+    /// Video (16:9) with centered transport + bottom scrubber overlaid. Both
+    /// auto-hide after 5s and reappear when the video is tapped.
+    private var videoWithControls: some View {
+        ZStack {
+            PlayerLayerView(player: vm.player, pip: pip)
+
+            // Tap anywhere on the video to toggle the overlaid controls.
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture { toggleVideoControls() }
+
+            if videoControlsVisible {
+                // Transport, centered over the video.
+                transportRow
+                    .transition(.opacity)
+
+                // Scrubber pinned to the video's bottom edge.
+                VStack {
+                    Spacer()
+                    scrubberBar
+                        .padding(.horizontal, 12)
+                        .padding(.top, 16)
+                        .padding(.bottom, 6)
+                        .background(
+                            LinearGradient(colors: [.clear, .black.opacity(0.55)],
+                                           startPoint: .top, endPoint: .bottom)
+                        )
+                }
+                .transition(.opacity)
+            }
+        }
+        .aspectRatio(16.0 / 9.0, contentMode: .fit)
+        .frame(maxWidth: .infinity)
+        .background(Color.black)
+        .clipped()
+    }
+
+    private var scrubberBar: some View {
+        VStack(spacing: 2) {
+            ABScrubber(
+                currentTime: vm.currentTime,
+                duration: vm.duration,
+                pointA: vm.pointA,
+                pointB: vm.pointB,
+                onSeek: { vm.seek(to: $0); showVideoControls() }
+            )
+            HStack {
+                Text(formatTime(vm.currentTime))
+                Spacer()
+                if vm.isLooping {
+                    Label("A-B Loop", systemImage: "repeat").foregroundStyle(.tint)
+                }
+                Spacer()
+                Text(formatTime(vm.duration))
+            }
+            .font(.caption2.monospacedDigit())
+            .foregroundStyle(.white.opacity(0.9))
+        }
+    }
+
+    // MARK: - Auto-hiding video controls
+
+    private func toggleVideoControls() {
+        if videoControlsVisible {
+            hideControlsTask?.cancel()
+            withAnimation(.easeInOut(duration: 0.25)) { videoControlsVisible = false }
+        } else {
+            showVideoControls()
+        }
+    }
+
+    /// Show the controls and (re)start the 5-second auto-hide timer.
+    private func showVideoControls() {
+        withAnimation(.easeInOut(duration: 0.25)) { videoControlsVisible = true }
+        scheduleHideControls()
+    }
+
+    private func scheduleHideControls() {
+        hideControlsTask?.cancel()
+        hideControlsTask = Task {
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                withAnimation(.easeInOut(duration: 0.4)) { videoControlsVisible = false }
+            }
+        }
+    }
+
+    // MARK: - Fullscreen (landscape): immersive video with overlaid controls
+
+    private var fullscreenLayout: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            PlayerLayerView(player: vm.player, pip: pip)
+                .ignoresSafeArea()
+
+            VStack {
+                topMenuBar
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+
+            landscapeControls
+        }
+    }
+
+    private var topMenuBar: some View {
+        HStack(spacing: 12) {
+            backButton
+            speedMenu
+            Spacer()
+            fullscreenButton
         }
     }
 
@@ -95,22 +236,6 @@ struct PlayerView: View {
         String(format: "%.1f×", rate)
     }
 
-    private var pipButton: some View {
-        Button {
-            pip.toggle()
-        } label: {
-            Image(systemName: pip.isActive
-                  ? "pip.exit"
-                  : "pip.enter")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(.white)
-                .padding(10)
-                .background(Color.black.opacity(0.45), in: Circle())
-        }
-        .disabled(!pip.isPossible)
-        .opacity(pip.isPossible ? 1 : 0.4)
-    }
-
     private var fullscreenButton: some View {
         Button {
             toggleFullscreen()
@@ -128,31 +253,6 @@ struct PlayerView: View {
     private func toggleFullscreen() {
         isFullscreen.toggle()
         Orientation.set(isFullscreen ? .landscape : .portrait)
-    }
-
-    // MARK: - Controls layer
-
-    private var controls: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.7)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 20)
-
-            VStack(spacing: 18) {
-                progressSection
-                transportRow
-                abRow
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 24)
-            .padding(.top, 8)
-            .background(Color.black.opacity(0.7))
-        }
-        .ignoresSafeArea(edges: .bottom)
     }
 
     // MARK: - Landscape layout: scrubber pinned to bottom, controls on the right, video/subtitles in the middle
@@ -226,59 +326,50 @@ struct PlayerView: View {
         }
     }
 
-    private var progressSection: some View {
-        VStack(spacing: 6) {
-            ABScrubber(
-                currentTime: vm.currentTime,
-                duration: vm.duration,
-                pointA: vm.pointA,
-                pointB: vm.pointB,
-                onSeek: { vm.seek(to: $0) }
-            )
-            HStack {
-                Text(formatTime(vm.currentTime))
-                Spacer()
-                if vm.isLooping {
-                    Label("A-B Loop", systemImage: "repeat")
-                        .foregroundStyle(.tint)
-                }
-                Spacer()
-                Text(formatTime(vm.duration))
-            }
-            .font(.caption.monospacedDigit())
-            .foregroundStyle(.white.opacity(0.85))
-        }
-    }
-
     private var transportRow: some View {
-        HStack(spacing: 48) {
-            SeekButton(
-                systemImage: "backward.fill",
-                onTap: { vm.seekBy(-vm.seekStep) },
-                onHold: { holding in
-                    if holding { vm.startScan(forward: false) }
-                    else { vm.stopScan() }
-                }
-            )
-
-            Button {
-                vm.playPause()
-            } label: {
-                Image(systemName: vm.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 40))
-                    .frame(width: 54, height: 54)
+        HStack(spacing: 22) {
+            circleBackground {
+                SeekButton(
+                    systemImage: "backward.fill",
+                    compact: true,
+                    onTap: { vm.seekBy(-vm.seekStep); showVideoControls() },
+                    onHold: { holding in
+                        if holding { vm.startScan(forward: false) }
+                        else { vm.stopScan(); showVideoControls() }
+                    }
+                )
             }
 
-            SeekButton(
-                systemImage: "forward.fill",
-                onTap: { vm.seekBy(vm.seekStep) },
-                onHold: { holding in
-                    if holding { vm.startScan(forward: true) }
-                    else { vm.stopScan() }
+            circleBackground {
+                Button {
+                    vm.playPause()
+                    showVideoControls()
+                } label: {
+                    Image(systemName: vm.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 24, weight: .semibold))
+                        .frame(width: 44, height: 44)
                 }
-            )
+            }
+
+            circleBackground {
+                SeekButton(
+                    systemImage: "forward.fill",
+                    compact: true,
+                    onTap: { vm.seekBy(vm.seekStep); showVideoControls() },
+                    onHold: { holding in
+                        if holding { vm.startScan(forward: true) }
+                        else { vm.stopScan(); showVideoControls() }
+                    }
+                )
+            }
         }
         .foregroundStyle(.white)
+    }
+
+    /// Each transport button gets its own translucent circular backdrop.
+    private func circleBackground<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .background(Color.black.opacity(0.4), in: Circle())
     }
 
     /// Portrait: three buttons in a row.
