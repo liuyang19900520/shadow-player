@@ -9,7 +9,6 @@ struct PlayerView: View {
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var vm = PlayerViewModel()
-    @StateObject private var pip = PictureInPictureManager()
     @StateObject private var words: WordListStore
     @State private var isFullscreen = false
     @State private var keyboardVisible = false
@@ -77,13 +76,16 @@ struct PlayerView: View {
             }
         }
         .background(Color.black.ignoresSafeArea())
+        // Keep the whole layout (esp. the video) fixed when the keyboard appears;
+        // the word list handles the keyboard itself via the padding above.
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 
     /// Video (16:9) with centered transport + bottom scrubber overlaid. Both
     /// auto-hide after 5s and reappear when the video is tapped.
     private var videoWithControls: some View {
         ZStack {
-            PlayerLayerView(player: vm.player, pip: pip)
+            PlayerLayerView(player: vm.player)
 
             // Tap anywhere on the video to toggle the overlaid controls.
             Color.clear
@@ -110,8 +112,8 @@ struct PlayerView: View {
                 .transition(.opacity)
             }
         }
-        .aspectRatio(16.0 / 9.0, contentMode: .fit)
         .frame(maxWidth: .infinity)
+        .frame(height: UIScreen.main.bounds.width * 9.0 / 16.0) // fixed 16:9 — never resizes with the keyboard
         .background(Color.black)
         .clipped()
     }
@@ -173,7 +175,7 @@ struct PlayerView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            PlayerLayerView(player: vm.player, pip: pip)
+            PlayerLayerView(player: vm.player)
                 .ignoresSafeArea()
 
             VStack {
