@@ -2,7 +2,7 @@ import Foundation
 
 /// A user-selected video, represented by its photo-library asset identifier
 /// (streamed for playback, no file copy).
-struct PickedVideo: Identifiable, Hashable {
+struct PickedVideo: Identifiable, Hashable, Codable {
     /// PHAsset.localIdentifier
     let id: String
     let duration: Double
