@@ -10,30 +10,42 @@ struct WordListEditor: View {
     private let hInset: CGFloat = 16
     private let colSpacing: CGFloat = 8
 
-    var body: some View {
-        List {
-            ForEach($store.entries) { $entry in
-                row($entry)
-            }
-            .onDelete { store.remove(atOffsets: $0) }
+    /// Anchor at the end of the list so we can jump to the bottom on appear.
+    private let bottomID = "wordListBottom"
 
-            Button {
-                store.addEmpty()
-            } label: {
-                Label("Add Row", systemImage: "plus.circle.fill")
-                    .font(.body.weight(.medium))
+    var body: some View {
+        ScrollViewReader { proxy in
+            List {
+                ForEach($store.entries) { $entry in
+                    row($entry)
+                }
+                .onDelete { store.remove(atOffsets: $0) }
+
+                Button {
+                    store.addEmpty()
+                } label: {
+                    Label("Add Row", systemImage: "plus.circle.fill")
+                        .font(.body.weight(.medium))
+                }
+                .listRowInsets(EdgeInsets(top: 10, leading: hInset, bottom: 10, trailing: hInset))
+                .listRowBackground(Color.clear)
+                .id(bottomID)
             }
-            .listRowInsets(EdgeInsets(top: 10, leading: hInset, bottom: 10, trailing: hInset))
-            .listRowBackground(Color.clear)
-        }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .scrollDismissesKeyboard(.interactively)
-        .toolbar {
-            // "Done" above the keyboard so the user can always dismiss it.
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") { dismissKeyboard() }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .scrollDismissesKeyboard(.interactively)
+            .toolbar {
+                // "Done" above the keyboard so the user can always dismiss it.
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { dismissKeyboard() }
+                }
+            }
+            .onAppear {
+                // Show the end of the list first (newest rows / add button).
+                DispatchQueue.main.async {
+                    proxy.scrollTo(bottomID, anchor: .bottom)
+                }
             }
         }
     }
