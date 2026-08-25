@@ -12,6 +12,7 @@ struct PlayerView: View {
     @StateObject private var words: WordListStore
     @State private var isFullscreen = false
     @State private var keyboardVisible = false
+    @State private var keyboardHeight: CGFloat = 0
     @State private var videoControlsVisible = true
     @State private var hideControlsTask: Task<Void, Never>?
 
@@ -43,7 +44,10 @@ struct PlayerView: View {
             hideControlsTask?.cancel()
             Orientation.set(.portrait) // restore portrait when leaving the player
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { note in
+            if let frame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                keyboardHeight = frame.height
+            }
             withAnimation(.easeOut(duration: 0.2)) { keyboardVisible = true }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
@@ -62,9 +66,11 @@ struct PlayerView: View {
 
             videoWithControls
 
-            // Word list fills the freed space below the video.
+            // Word list fills the freed space below the video. While typing, lift
+            // only this area above the keyboard (the video, above it, stays put).
             WordListEditor(store: words)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.bottom, keyboardVisible ? keyboardHeight : 0)
 
             // A-B stays at the bottom; hidden while typing to give the word list room.
             if !keyboardVisible {

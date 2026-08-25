@@ -4,17 +4,31 @@ import Foundation
 final class WordListStore: ObservableObject {
     @Published var entries: [WordEntry] { didSet { save() } }
 
-    private let key: String
+    private let videoID: String
 
     init(videoID: String) {
-        key = "words_" + videoID
-        if let data = UserDefaults.standard.data(forKey: key),
-           let decoded = try? JSONDecoder().decode([WordEntry].self, from: data),
-           !decoded.isEmpty {
-            entries = decoded
-        } else {
-            // Start with one blank row so the user can type right away.
-            entries = [WordEntry()]
+        self.videoID = videoID
+        let loaded = WordListStore.load(videoID: videoID)
+        // Start with one blank row so the user can type right away.
+        entries = loaded.isEmpty ? [WordEntry()] : loaded
+    }
+
+    // MARK: - Persistence (also used by the merged playlist word list)
+
+    static func key(for videoID: String) -> String { "words_" + videoID }
+
+    /// The persisted rows for a video (empty if none saved yet — no blank seed).
+    static func load(videoID: String) -> [WordEntry] {
+        guard
+            let data = UserDefaults.standard.data(forKey: key(for: videoID)),
+            let decoded = try? JSONDecoder().decode([WordEntry].self, from: data)
+        else { return [] }
+        return decoded
+    }
+
+    static func save(_ entries: [WordEntry], videoID: String) {
+        if let data = try? JSONEncoder().encode(entries) {
+            UserDefaults.standard.set(data, forKey: key(for: videoID))
         }
     }
 
@@ -33,8 +47,6 @@ final class WordListStore: ObservableObject {
     }
 
     private func save() {
-        if let data = try? JSONEncoder().encode(entries) {
-            UserDefaults.standard.set(data, forKey: key)
-        }
+        WordListStore.save(entries, videoID: videoID)
     }
 }
