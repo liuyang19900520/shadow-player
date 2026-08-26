@@ -216,44 +216,24 @@ Note: the simulator/device used for review must have at least one video in the p
 
 ---
 
-## 7. 截图
+## 7. 截图 — ✅ 已完成
 
-### 现状（需要你执行一步）
+5 张截图已生成，位于 **`screenshots/6.9-inch/`**，尺寸均为 **1320 × 2868**（App Store 6.9 吋规格）。
+状态栏已统一为 Apple 规范的 9:41 样式，Release 构建截取。
 
-我已经：
-- ✅ 用 ffmpeg 生成了测试视频并导入模拟器相册
-- ✅ 在 iPhone 17 Pro Max 模拟器上装好 Release 版并成功启动、截到首页
-
-但**无法继续自动操作**（点击、导航到播放页等），因为模拟器控制工具报错：
-
-```
-Xcode is installed but not selected.
-```
-
-### 需要你执行（需要密码，我无法代做）
-
-```bash
-sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-```
-
-执行后告诉我，我就能自动完成剩下的：填充数据 → 逐屏导航 → 批量截图两种尺寸。
-
-### 需要的尺寸
-
-| 显示尺寸 | 机型 | 分辨率 |
+| 文件 | 内容 | 建议顺序 |
 |---|---|---|
-| 6.9" / 6.7" | iPhone 17 Pro Max | 1320 × 2868 |
-| 6.5" 或 6.1" | iPhone 17 / 16 Pro | 视机型 |
+| `02-player-ab.png` | **播放页：A-B 循环激活**（进度条上有 A/B 标记与循环区间）+ 单词表 | **1（主图）** |
+| `01-home.png` | 首页：最近播放 + 播放列表 | 2 |
+| `03-wordlist-ab.png` | 单词表编辑 + A/B 按钮激活态 | 3 |
+| `04-playlist.png` | 播放列表详情 + Combined Word List 入口 | 4 |
+| `05-combined-words.png` | 合并单词表（汇总列表内所有视频的词） | 5 |
 
-> App Store Connect 目前实际只强制要求 **6.9"（或 6.7"）一组**，其余尺寸会自动缩放。所以最少准备一组即可。
+> App Store Connect 只强制要求 **6.9 吋一组**，其余尺寸自动缩放，因此这一组即可提交。
+> 详见 [screenshots/README.md](screenshots/README.md)。截图不入库（已加进 `.gitignore`），
+> 需要重做时按该文档说明重新生成。
 
-### 建议的 4–5 张截图内容
-
-1. **首页** —— 最近播放 + 播放列表
-2. **播放页 + A-B 循环激活**（进度条上有 A/B 标记）—— 最能体现核心卖点
-3. **单词表** —— 视频下方的编辑区
-4. **播放列表详情 + 合并单词表**
-5. **全屏横屏播放**（可选）
+**素材说明**：截图中的视频是用 ffmpeg 生成的模拟日语课程画面（非真实版权内容），可安全用于商店展示。
 
 ---
 
