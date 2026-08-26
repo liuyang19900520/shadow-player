@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support — ShadowPlayer</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1d1d1f; --muted: #6e6e73;
+    --line: #d2d2d7; --accent: #0071e3; --card: #f5f5f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #000000; --fg: #f5f5f7; --muted: #a1a1a6;
+            --line: #333336; --accent: #2997ff; --card: #1c1c1e; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0 20px 80px;
+    background: var(--bg); color: var(--fg);
+    font: 17px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  header { padding: 56px 0 32px; border-bottom: 1px solid var(--line); margin-bottom: 32px; }
+  h1 { font-size: clamp(27px, 7.5vw, 34px); line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.02em; }
+  h2 { font-size: 22px; margin: 40px 0 12px; letter-spacing: -0.01em; }
+  h3 { font-size: 18px; margin: 24px 0 6px; }
+  .updated { color: var(--muted); font-size: 15px; margin: 0; }
+  .lead { font-size: 19px; }
+  .card { background: var(--card); border-radius: 14px; padding: 20px 24px; margin: 24px 0; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 8px 0; }
+  a { color: var(--accent); }
+  footer { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 15px; }
+  .lang-divider { margin: 64px 0 0; padding-top: 40px; border-top: 1px solid var(--line); }
+  .faq { border-bottom: 1px solid var(--line); padding-bottom: 16px; }
+  kbd { background: var(--card); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-size: 15px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>ShadowPlayer Support</h1>
+  <p class="updated">A minimalist video player built for A-B repeat practice</p>
+</header>
+
+<p class="lead">Need help? Email <a href="mailto:liuyang19900520@gmail.com">liuyang19900520@gmail.com</a> — I usually reply within a couple of days.</p>
+
+<h2>What ShadowPlayer does</h2>
+<p>
+  ShadowPlayer plays videos from your own photo library and lets you loop any section
+  over and over — designed for shadowing practice, language study, and drilling a
+  passage until it sticks.
+</p>
+<ul>
+  <li><strong>A-B repeat</strong> — mark a start and end point; playback loops between them indefinitely</li>
+  <li><strong>Word lists</strong> — jot down words per video while you practice</li>
+  <li><strong>Playlists</strong> — group videos, and view every video's words merged into one list</li>
+  <li><strong>Playback speed</strong> — 0.8× to 1.2×, with natural voice pitch</li>
+  <li><strong>Resume</strong> — picks up where you left off</li>
+  <li><strong>Background audio</strong> — keeps playing when the screen is locked</li>
+</ul>
+
+<h2>Frequently asked questions</h2>
+
+<div class="faq">
+  <h3>How do I set an A-B loop?</h3>
+  <p>While playing, tap <strong>Set A</strong> at the point you want the loop to start, then <strong>Set B</strong> where it should end. Playback then repeats that section until you tap <strong>Cancel</strong>.</p>
+</div>
+
+<div class="faq">
+  <h3>Why does the app need photo library access?</h3>
+  <p>To let you pick which videos to play. ShadowPlayer only reads the videos you select — it never adds, modifies, or deletes anything in your library, and nothing is uploaded. See the <a href="./privacy.html">Privacy Policy</a>.</p>
+</div>
+
+<div class="faq">
+  <h3>Where are my videos stored?</h3>
+  <p>They stay in your photo library. ShadowPlayer plays them directly and never makes copies, so it uses almost no extra storage.</p>
+</div>
+
+<div class="faq">
+  <h3>A video disappeared from my list</h3>
+  <p>ShadowPlayer references videos in your photo library. If a video is deleted from the library, it can no longer be played.</p>
+</div>
+
+<div class="faq">
+  <h3>Can I play videos in the background?</h3>
+  <p>Yes. Audio keeps playing when you lock the screen or return to the home screen — useful for listening practice.</p>
+</div>
+
+<div class="faq">
+  <h3>How do I fast-forward precisely?</h3>
+  <p>Tap the forward/back buttons to jump 3 seconds. Press and hold to scan continuously, and release to stop.</p>
+</div>
+
+<h2>Contact</h2>
+<p>Bug reports, feature requests, or anything else: <a href="mailto:liuyang19900520@gmail.com">liuyang19900520@gmail.com</a></p>
+
+<!-- ───────────── 中文 ───────────── -->
+<div class="lang-divider">
+  <h1>ShadowPlayer 支持</h1>
+  <p class="updated">为 A-B 循环练习打造的极简播放器</p>
+</div>
+
+<p class="lead">需要帮助？请邮件联系 <a href="mailto:liuyang19900520@gmail.com">liuyang19900520@gmail.com</a>，通常两天内回复。</p>
+
+<h2>ShadowPlayer 是什么</h2>
+<p>ShadowPlayer 播放你相册里的视频，并可以把任意片段反复循环——专为影子跟读、语言学习和反复练习设计。</p>
+<ul>
+  <li><strong>A-B 循环</strong>——标记起点和终点，在两点之间无限重复</li>
+  <li><strong>单词表</strong>——练习时随手记录每个视频的生词</li>
+  <li><strong>播放列表</strong>——把视频归类，并可查看整个列表所有视频的合并单词表</li>
+  <li><strong>倍速播放</strong>——0.8× 至 1.2×，音调保持自然</li>
+  <li><strong>断点续播</strong>——从上次结束的位置继续</li>
+  <li><strong>后台播放</strong>——锁屏后声音继续播放</li>
+</ul>
+
+<h2>常见问题</h2>
+
+<div class="faq">
+  <h3>如何设置 A-B 循环？</h3>
+  <p>播放时，在想要循环开始的位置点 <strong>Set A</strong>，在结束位置点 <strong>Set B</strong>，之后就会在这一段之间反复播放，点 <strong>Cancel</strong> 取消。</p>
+</div>
+
+<div class="faq">
+  <h3>为什么需要相册权限？</h3>
+  <p>用于让你选择要播放的视频。ShadowPlayer 只读取你选中的视频，从不添加、修改或删除相册内容，也不会上传任何数据。详见<a href="./privacy.html">隐私政策</a>。</p>
+</div>
+
+<div class="faq">
+  <h3>视频保存在哪里？</h3>
+  <p>视频始终留在你的相册中。ShadowPlayer 直接播放，不会产生副本，因此几乎不占用额外存储空间。</p>
+</div>
+
+<div class="faq">
+  <h3>列表里的视频不见了</h3>
+  <p>ShadowPlayer 引用的是相册中的视频。如果视频已从相册中删除，就无法再播放。</p>
+</div>
+
+<div class="faq">
+  <h3>可以后台播放吗？</h3>
+  <p>可以。锁屏或回到主屏幕后声音会继续播放，适合听力练习。</p>
+</div>
+
+<div class="faq">
+  <h3>如何精确快进？</h3>
+  <p>点击前进/后退按钮跳转 3 秒；长按可连续快进/快退，松手停止。</p>
+</div>
+
+<h2>联系方式</h2>
+<p>问题反馈、功能建议或其他事项：<a href="mailto:liuyang19900520@gmail.com">liuyang19900520@gmail.com</a></p>
+
+<footer>
+  © 2026 ShadowPlayer · <a href="./privacy.html">Privacy Policy</a>
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ShadowPlayer</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1d1d1f; --muted: #6e6e73;
+    --line: #d2d2d7; --accent: #0071e3; --card: #f5f5f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #000000; --fg: #f5f5f7; --muted: #a1a1a6;
+            --line: #333336; --accent: #2997ff; --card: #1c1c1e; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0 20px 80px;
+    background: var(--bg); color: var(--fg);
+    font: 17px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  header { padding: 88px 0 40px; text-align: center; }
+  h1 { font-size: clamp(32px, 9vw, 46px); line-height: 1.1; margin: 0 0 12px; letter-spacing: -0.03em; }
+  .tagline { font-size: clamp(17px, 4.5vw, 21px); color: var(--muted); margin: 0; }
+  h2 { font-size: 24px; margin: 48px 0 16px; letter-spacing: -0.01em; }
+  .features { display: grid; gap: 14px; padding: 0; list-style: none; margin: 0; }
+  .features li { background: var(--card); border-radius: 14px; padding: 18px 22px; margin: 0; }
+  .features strong { display: block; margin-bottom: 2px; }
+  .features span { color: var(--muted); font-size: 15px; }
+  .links { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 40px; }
+  .links a {
+    display: inline-block; padding: 12px 24px; border-radius: 980px;
+    background: var(--accent); color: #fff; text-decoration: none; font-weight: 500;
+  }
+  .links a.secondary { background: var(--card); color: var(--accent); }
+  footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 15px; text-align: center; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>ShadowPlayer</h1>
+  <p class="tagline">Loop any part of a video, as many times as it takes.</p>
+</header>
+
+<p>
+  A minimalist iOS video player built for <strong>shadowing practice</strong> and language study.
+  Play videos from your own photo library, mark a section, and let it repeat while you practice.
+</p>
+
+<h2>Features</h2>
+<ul class="features">
+  <li><strong>A-B repeat</strong><span>Mark a start and end point — the section loops indefinitely until you cancel.</span></li>
+  <li><strong>Word lists</strong><span>Jot down words per video while you practice, and review them later.</span></li>
+  <li><strong>Playlists</strong><span>Group videos together and see every video's words merged into one editable list.</span></li>
+  <li><strong>Playback speed</strong><span>0.8× to 1.2×, with the voice pitch kept natural.</span></li>
+  <li><strong>Precise seeking</strong><span>Tap to jump 3 seconds, or press and hold to scan.</span></li>
+  <li><strong>Resume &amp; background audio</strong><span>Picks up where you left off, and keeps playing when the screen is locked.</span></li>
+  <li><strong>Completely private</strong><span>No account, no network requests, no data collection. Everything stays on your device.</span></li>
+</ul>
+
+<div class="links">
+  <a href="./support.html">Support</a>
+  <a class="secondary" href="./privacy.html">Privacy Policy</a>
+</div>
+
+<footer>
+  © 2026 ShadowPlayer
+</footer>
+
+</div>
+</body>
+</html>
