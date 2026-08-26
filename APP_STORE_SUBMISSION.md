@@ -31,36 +31,42 @@
 
 ---
 
-## 2. 网站部署（GitHub Pages + 你的域名）
+## 2. 网站 — ✅ 已上线
 
-已生成 `docs/` 目录，包含三个页面 + `CNAME` + `.nojekyll`。
+网站已部署到你的 AWS 账号（`324971275476`）并通过 HTTPS 可访问。
 
-### 部署步骤
+### 线上网址（可直接填进 App Store Connect）
 
-1. **推送代码**（本分支合并到 master 后）
-2. GitHub 仓库 → **Settings › Pages**
-   - Source: `Deploy from a branch`
-   - Branch: `master`，Folder: `/docs`
-   - Save
-3. **配置 DNS**（在你的域名服务商处，为 `liuyang19900520.com` 添加）：
-   ```
-   类型: CNAME
-   主机: shadowplayer
-   值:   liuyang19900520.github.io
-   ```
-4. 回到 GitHub Pages 设置，等待自定义域名校验通过，勾选 **Enforce HTTPS**
+| 用途 | 网址 | 状态 |
+|---|---|---|
+| 隐私政策（必填） | `https://shadowplayer.liuyang19900520.com/privacy.html` | ✅ 200 |
+| 支持网址（必填） | `https://shadowplayer.liuyang19900520.com/support.html` | ✅ 200 |
+| 营销网址（选填） | `https://shadowplayer.liuyang19900520.com/` | ✅ 200 |
 
-### 最终网址
+### 已创建的 AWS 资源
 
-| 用途 | 网址 |
+| 资源 | 标识 |
 |---|---|
-| 隐私政策（App Store Connect 必填） | `https://shadowplayer.liuyang19900520.com/privacy.html` |
-| 支持网址（App Store Connect 必填） | `https://shadowplayer.liuyang19900520.com/support.html` |
-| 营销网址（选填） | `https://shadowplayer.liuyang19900520.com/` |
+| S3 桶（私有） | `shadowplayer.liuyang19900520.com` |
+| ACM 证书（us-east-1） | `075d8827-89d0-4baa-95f3-e0393e20b030` |
+| CloudFront 分发 | `EOJATFWF8U3SJ` → `d2kw8li0le4l0e.cloudfront.net` |
+| Origin Access Control | `ECNMRWOH6D14Y` |
+| Route53 A 记录（别名） | `shadowplayer.liuyang19900520.com` |
 
-> 如果暂时不想配 DNS，可先用 GitHub 默认域名：
-> `https://liuyang19900520.github.io/shadow-player/privacy.html`
-> （此时删掉 `docs/CNAME` 文件即可）
+架构与你已有的 `wallet.liuyang19900520.com` 一致：**S3 保持私有**，仅允许该 CloudFront
+分发通过 OAC 读取；HTTP 自动 301 跳转 HTTPS；TLS 1.2+。
+
+**成本**：约每月 $0.5 以内（这点流量基本落在 CloudFront 免费额度内）。
+
+### 以后更新网页
+
+改完 `docs/` 里的文件后执行：
+
+```bash
+./scripts/deploy-site.sh
+```
+
+脚本会同步到 S3 并清除 CloudFront 缓存。
 
 ---
 
