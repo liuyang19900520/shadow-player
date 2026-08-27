@@ -254,8 +254,9 @@ Note: the simulator/device used for review must have at least one video in the p
 ### 账号通过后要做的
 
 1. Xcode → Settings → Accounts → 用同一 Apple ID 登录
-2. 项目 → Signing & Capabilities → **Team 换成新的付费团队**
-   （当前是免费个人团队 `3T7MJA53W9`，签名 7 天过期）
+2. 项目 → Signing & Capabilities → 确认 Team
+   （Apple 会把原有的个人团队**原地升级**为付费会员，Team ID 不变，仍是 `3T7MJA53W9`，
+   因此工程无需改动；签名有效期自动从 7 天变为 1 年）
 3. 在 App Store Connect 创建 App 记录，Bundle ID 选 `com.liuyang19900520.shadowplayer`
 
 ---

@@ -24,11 +24,13 @@
 - **声明内容**：类别 `NSPrivacyAccessedAPICategoryUserDefaults`，理由码 `CA92.1`（仅 App 自身读写，不与其他 App 共享）—— 与实际代码一致
 - ⚠️ **今后新增第三方库或用到文件时间戳 / 磁盘空间 / 系统启动时间等 API 时，必须回来补充声明**
 
-### ☐ 2. 付费开发者账号 + 重新签名
+### ✅ 2. 付费开发者账号 — 已完成
 
-- 注册 Apple Developer Program（$99/年）
-- 注册后在 Xcode → Signing & Capabilities 把 Team 换成新团队（当前是个人免费团队 `3T7MJA53W9`）
-- 签名有效期从 **7 天** 变为 **1 年**（免费账号 7 天过期会导致 App 打不开 —— 之前遇到过的黑屏就是这个原因）
+- 已加入 Apple Developer Program（注册身份：个人，续订日期 2027-08-27）
+- Apple 把原有的个人团队**原地升级**，**Team ID 保持 `3T7MJA53W9` 不变**，
+  因此工程的 `DEVELOPMENT_TEAM` 无需修改
+- 签名有效期已从 **7 天** 变为 **1 年**（团队名也从「洋 刘」变为「Yang LIU」，
+  可据此确认升级已生效）
 
 ### ☐ 3. Bundle ID 确认唯一
 
