@@ -136,6 +136,9 @@ struct HomeView: View {
     /// Requests photo-library permission, then opens the picker.
     private func selectVideos() {
         Task {
+            // PHAccessLevel only offers .addOnly / .readWrite — there is no
+            // read-only level, so .readWrite is required just to read the library.
+            // The app never adds to or modifies the user's photos.
             let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
             if status == .authorized || status == .limited {
                 showPicker = true

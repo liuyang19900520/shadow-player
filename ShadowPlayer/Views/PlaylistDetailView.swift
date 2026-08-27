@@ -25,11 +25,16 @@ struct PlaylistDetailView: View {
                     Label("Combined Word List", systemImage: "square.stack.3d.up.fill")
                 }
 
+                #if DEBUG
+                // Not yet implemented, so it ships hidden: App Review flags
+                // visibly unfinished features (guideline 2.1). Remove the #if
+                // once sync actually works.
                 Button {
                     showSyncSoon = true
                 } label: {
                     Label("Sync Word List", systemImage: "arrow.triangle.2.circlepath")
                 }
+                #endif
             }
 
             Section("Videos") {
