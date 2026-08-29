@@ -2,13 +2,21 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- "Audio, AirPlay, and Picture in Picture" background mode. Required for
-	     Picture-in-Picture; cannot be expressed as an INFOPLIST_KEY_* build
-	     setting, so it lives in this partial plist. Xcode merges the generated
+	<!-- "Audio, AirPlay, and Picture in Picture" background mode. Keeps audio
+	     playing while the screen is locked or the app is backgrounded (used for
+	     listening practice). It cannot be expressed as an INFOPLIST_KEY_* build
+	     setting, so it lives in this partial plist; Xcode merges the generated
 	     INFOPLIST_KEY_* values into these contents at build time. -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
 	</array>
+
+	<!-- The app uses only Apple's standard system encryption (e.g. HTTPS/TLS in
+	     system frameworks) and no custom or proprietary cryptography, so it
+	     qualifies for the export-compliance exemption. Declaring this here lets
+	     every upload skip the encryption question in App Store Connect. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
