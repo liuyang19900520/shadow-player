@@ -8,11 +8,17 @@ struct HomeView: View {
 
     @State private var showPicker = false
     @State private var showDeniedAlert = false
-    @State private var addToPlaylistVideo: PickedVideo?
+    @State private var assignBatch: PickedBatch?
     @State private var showNewPlaylist = false
     @State private var newPlaylistName = ""
 
     private let recentLimit = 3
+
+    /// Identifiable wrapper so a batch of just-picked videos can drive a sheet.
+    private struct PickedBatch: Identifiable {
+        let id = UUID()
+        let videos: [PickedVideo]
+    }
 
     var body: some View {
         NavigationStack {
@@ -37,11 +43,19 @@ struct HomeView: View {
                 PlaylistDetailView(playlistID: playlist.id, store: playlists)
             }
             .sheet(isPresented: $showPicker) {
-                VideoPicker(onPicked: { recent.addMany($0) })
-                    .ignoresSafeArea()
+                VideoPicker(onPicked: { picked in
+                    guard !picked.isEmpty else { return }
+                    recent.addMany(picked)
+                    // Let the picker finish dismissing before presenting the
+                    // assign sheet, otherwise the second sheet won't appear.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        assignBatch = PickedBatch(videos: picked)
+                    }
+                })
+                .ignoresSafeArea()
             }
-            .sheet(item: $addToPlaylistVideo) { video in
-                AddToPlaylistView(video: video, store: playlists)
+            .sheet(item: $assignBatch) { batch in
+                AddToPlaylistView(videos: batch.videos, store: playlists)
             }
             .alert("Can’t Access Photos", isPresented: $showDeniedAlert) {
                 Button("Open Settings") {
@@ -81,7 +95,7 @@ struct HomeView: View {
                     }
                     .swipeActions(edge: .trailing) {
                         Button {
-                            addToPlaylistVideo = video
+                            assignBatch = PickedBatch(videos: [video])
                         } label: {
                             Label("Add to Playlist", systemImage: "text.badge.plus")
                         }
@@ -89,7 +103,7 @@ struct HomeView: View {
                     }
                     .contextMenu {
                         Button {
-                            addToPlaylistVideo = video
+                            assignBatch = PickedBatch(videos: [video])
                         } label: {
                             Label("Add to Playlist", systemImage: "text.badge.plus")
                         }

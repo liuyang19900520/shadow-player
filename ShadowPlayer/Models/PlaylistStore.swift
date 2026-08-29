@@ -62,6 +62,28 @@ final class PlaylistStore: ObservableObject {
         save()
     }
 
+    /// Adds or removes a batch of videos in one playlist. Adding skips videos
+    /// already present; removing skips videos that aren't there.
+    func setMembership(_ videos: [PickedVideo], in id: UUID, add: Bool) {
+        guard let i = index(of: id) else { return }
+        for video in videos {
+            let existing = playlists[i].videos.firstIndex { $0.id == video.id }
+            if add, existing == nil {
+                playlists[i].videos.insert(video, at: 0) // newest first
+            } else if !add, let e = existing {
+                playlists[i].videos.remove(at: e)
+            }
+        }
+        save()
+    }
+
+    /// True only when every given video is already in the playlist.
+    func containsAll(_ videos: [PickedVideo], in id: UUID) -> Bool {
+        guard !videos.isEmpty, let i = index(of: id) else { return false }
+        let ids = Set(playlists[i].videos.map(\.id))
+        return videos.allSatisfy { ids.contains($0.id) }
+    }
+
     func removeVideos(atOffsets offsets: IndexSet, from id: UUID) {
         guard let i = index(of: id) else { return }
         playlists[i].videos.remove(atOffsets: offsets)
