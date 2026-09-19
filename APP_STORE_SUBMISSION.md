@@ -5,6 +5,73 @@
 
 ---
 
+## 版本 1.1 更新（当前待提交）
+
+| 项 | 值 |
+|---|---|
+| 版本号 | **1.1** |
+| Build 号 | **2** |
+| 相比 1.0 | 新增单词释义（设备端翻译）、每个视频记住倍速、单词表界面重做；移除未实现的 Sync 按钮 |
+
+### 本次更新说明（What's New，English — 直接复制）
+
+```
+Word meanings
+Words you note can now show a meaning underneath. Translation runs entirely on your device, so nothing leaves your iPhone. Pick the audio language and the meaning language per playlist, so an English playlist and a Japanese one keep their own settings.
+
+Playback speed is remembered
+Each video reopens at the speed you last watched it.
+
+A cleaner word list
+Words and meanings now sit in a standard two-line row. Swipe to delete, and tapping Add word puts the cursor straight into the new row.
+
+Fixes
+- The video no longer shifts when the keyboard appears
+- The speed selector is much easier to tap
+- The list stays where you were after finishing input
+```
+
+### 本次更新说明（简体中文 — 直接复制）
+
+```
+单词释义
+记录的单词下方可以显示释义。翻译完全在你的设备上完成，内容不会离开你的 iPhone。音频语言和释义语言可按播放列表分别设置，英语列表和日语列表互不影响。
+
+记住播放倍速
+每个视频都会以你上次观看的倍速重新打开。
+
+更清爽的单词表
+单词和释义采用标准的两行式排列。左滑即可删除，点击「Add word」后光标会直接落在新行上。
+
+问题修复
+- 键盘弹出时视频不再被顶动
+- 倍速选择器更容易点中
+- 输入完成后列表停留在原位
+```
+
+### 审核备注（App Review Notes，本次提交用）
+
+```
+ShadowPlayer plays videos from the user's own photo library. No account or login is required.
+
+To test:
+1. Launch the app and tap "Select Video"
+2. Grant photo library access when prompted
+3. Choose any video from the library
+4. In the player, tap "Set A" and then "Set B" to create a repeating loop
+5. Turn on "Show meanings" in the word list, tap "Add word", type a word, and tap Done — a meaning appears beneath it
+
+New in this version: word meanings are produced by Apple's on-device Translation framework (iOS 18+). Nothing is sent off the device, and the app still makes no network requests of its own. On iOS 17 and earlier the feature is hidden entirely. The first use of a language pair may prompt the system to download that language.
+
+The photo library permission is used only to read videos the user personally selects. The app never adds to, modifies, or deletes anything in the library.
+
+Note: the device used for review must have at least one video in the photo library.
+```
+
+> ⚠️ 最后一句依然重要：审核设备相册里没有视频的话，审核员会看到空列表。
+
+---
+
 ## 0. 我能做的 / 你必须自己做的
 
 | 事项 | 谁来做 | 说明 |
@@ -15,7 +82,7 @@
 | 落地页 | ✅ 已完成 | `docs/index.html` |
 | App 描述、关键词、隐私标签答案 | ✅ 已完成 | 见下方，可直接复制 |
 | **注册开发者账号** | ❌ **必须你本人** | 涉及身份认证、密码、$99 扣款，我不能代做 |
-| **上传截图** | ⚠️ 半自动 | 我可以生成，但需要你先执行一条命令，见「截图」章节 |
+| **生成截图** | ✅ 我来做 | 用模拟器 + 无版权素材生成，见「截图」章节 |
 | 在 App Store Connect 填表 | ❌ 你本人 | 需要登录你的账号 |
 
 ---
@@ -25,7 +92,7 @@
 - ✅ 新增 `ShadowPlayer/PrivacyInfo.xcprivacy` —— 声明 `UserDefaults` 的 Required Reason API（`CA92.1`）。**不加这个上传会被自动拒**
 - ✅ `TARGETED_DEVICE_FAMILY = 1` —— 仅 iPhone，移除 iPad 方向配置
 - ✅ Bundle ID 改为 `com.liuyang19900520.shadowplayer` —— 反写域名，避免与他人冲突
-- ✅ 「Sync Word List」按钮用 `#if DEBUG` 包裹 —— **Release 版不显示**，避免审核指南 2.1「功能未完成」的风险；开发时仍可见
+- ✅ 「Sync Word List」按钮已**彻底删除**（1.1）—— 此前用 `#if DEBUG` 隐藏，现在连代码一并移除，不再有未实现的功能残留
 - ✅ 相册权限层级加注释说明 —— `PHAccessLevel` 无只读级别，`.readWrite` 是读取相册的唯一选项
 - ✅ Debug / Release 双配置构建通过，无错误无警告
 
@@ -100,13 +167,13 @@ A-B REPEAT
 Mark a start point and an end point. Playback loops between them indefinitely until you cancel. Both points are visible on the scrubber, so you always know exactly what's looping.
 
 WORD LISTS
-Jot down words as you practice. Each video keeps its own list, and you can review or edit it any time without leaving the player.
+Jot down words as you practice. Each video keeps its own list, and you can review or edit it any time without leaving the player. Turn on meanings and each word gets a translation underneath, produced entirely on your device.
 
 PLAYLISTS
 Group related videos together. Open a playlist to see every video's words merged into a single editable list — handy for reviewing a whole lesson at once.
 
 PLAYBACK BUILT FOR PRACTICE
-• Speed from 0.8x to 1.2x, with voice pitch kept natural
+• Speed from 0.8x to 1.2x with voice pitch kept natural, remembered per video
 • Tap to jump 3 seconds, or press and hold to scan
 • Resumes where you left off
 • Audio keeps playing when the screen is locked
@@ -127,13 +194,13 @@ A-B 循环
 标记起点和终点，播放会在两点之间无限重复，直到你取消。A、B 两点在进度条上清晰可见，循环范围一目了然。
 
 单词表
-练习时随手记下生词。每个视频拥有独立的单词表，无需离开播放页即可查看和编辑。
+练习时随手记下生词。每个视频拥有独立的单词表，无需离开播放页即可查看和编辑。打开释义开关后，每个单词下方会显示译文，翻译完全在你的设备上完成。
 
 播放列表
 把相关视频归为一组。打开播放列表，可以把其中所有视频的单词合并成一份可编辑的总表，方便整课复习。
 
 为练习而生的播放控制
-• 0.8 倍至 1.2 倍速，音调保持自然
+• 0.8 倍至 1.2 倍速，音调保持自然，并按视频分别记住
 • 点击跳转 3 秒，长按连续快进/快退
 • 自动从上次结束的位置继续
 • 锁屏后声音继续播放

@@ -6,7 +6,6 @@ struct PlaylistDetailView: View {
     @ObservedObject var store: PlaylistStore
 
     @State private var showMergedWords = false
-    @State private var showSyncSoon = false
 
     private var playlist: Playlist? {
         store.playlists.first { $0.id == playlistID }
@@ -24,17 +23,6 @@ struct PlaylistDetailView: View {
                 } label: {
                     Label("Combined Word List", systemImage: "square.stack.3d.up.fill")
                 }
-
-                #if DEBUG
-                // Not yet implemented, so it ships hidden: App Review flags
-                // visibly unfinished features (guideline 2.1). Remove the #if
-                // once sync actually works.
-                Button {
-                    showSyncSoon = true
-                } label: {
-                    Label("Sync Word List", systemImage: "arrow.triangle.2.circlepath")
-                }
-                #endif
             }
 
             Section("Videos") {
@@ -61,12 +49,11 @@ struct PlaylistDetailView: View {
             }
         }
         .sheet(isPresented: $showMergedWords) {
-            MergedWordListView(videoIDs: videoIDs)
-        }
-        .alert("Coming Soon", isPresented: $showSyncSoon) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Word-list sync will be implemented later.")
+            MergedWordListView(
+                videoIDs: videoIDs,
+                // Languages belong to the playlist, so every video in it shares one pair.
+                scope: playlist.map(TranslationScope.playlist) ?? .shared
+            )
         }
     }
 }

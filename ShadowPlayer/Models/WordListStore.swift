@@ -8,9 +8,9 @@ final class WordListStore: ObservableObject {
 
     init(videoID: String) {
         self.videoID = videoID
-        let loaded = WordListStore.load(videoID: videoID)
-        // Start with one blank row so the user can type right away.
-        entries = loaded.isEmpty ? [WordEntry()] : loaded
+        // No blank seed row: an empty list shows just "Add word", which focuses
+        // the new row as soon as it is tapped.
+        entries = WordListStore.load(videoID: videoID)
     }
 
     // MARK: - Persistence (also used by the merged playlist word list)
@@ -32,9 +32,33 @@ final class WordListStore: ObservableObject {
         }
     }
 
-    /// Append a blank row for the user to fill in.
-    func addEmpty() {
-        entries.append(WordEntry())
+    /// Append a blank row for the user to fill in, and report its id so the
+    /// caller can put the keyboard straight into it.
+    @discardableResult
+    func addEmpty() -> UUID {
+        let entry = WordEntry()
+        entries.append(entry)
+        return entry.id
+    }
+
+    // MARK: - Translation
+
+    /// Rows that have a word but no meaning yet.
+    var untranslated: [TranslationItem] {
+        entries
+            .filter(\.needsTranslation)
+            .map { TranslationItem(id: $0.id.uuidString, text: $0.trimmedText) }
+    }
+
+    /// Fill in meanings from a finished translation batch. Rows the user has
+    /// since typed a meaning into are left alone.
+    func applyTranslations(_ results: [String: String]) {
+        guard !results.isEmpty else { return }
+        for i in entries.indices where entries[i].needsTranslation {
+            guard let meaning = results[entries[i].id.uuidString],
+                  !meaning.isEmpty else { continue }
+            entries[i].translation = meaning
+        }
     }
 
     func remove(atOffsets offsets: IndexSet) {

@@ -26,6 +26,7 @@ final class PlayerViewModel: ObservableObject {
 
     func setRate(_ rate: Float) {
         playbackRate = rate
+        UserDefaults.standard.set(rate, forKey: rateKey) // remembered per video
         if isPlaying { player.rate = rate }
         updateNowPlaying()
     }
@@ -40,6 +41,8 @@ final class PlayerViewModel: ObservableObject {
     private var lastSavedProgress: Double = 0
     private let progressKeyPrefix = "progress_"
     private var progressKey: String { progressKeyPrefix + videoID }
+    private let rateKeyPrefix = "rate_"
+    private var rateKey: String { rateKeyPrefix + videoID }
 
     var isLooping: Bool { pointA != nil && pointB != nil }
 
@@ -48,6 +51,7 @@ final class PlayerViewModel: ObservableObject {
     func load(video: PickedVideo) {
         videoID = video.id
         duration = video.duration
+        playbackRate = savedRate() // each video reopens at the speed it was left on
         configureAudioSession()
 
         guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [video.id], options: nil).firstObject else {
@@ -149,6 +153,13 @@ final class PlayerViewModel: ObservableObject {
 
     private func resumePosition() -> Double {
         UserDefaults.standard.double(forKey: progressKey)
+    }
+
+    /// The speed this video was last watched at, or normal speed if it has none
+    /// (or the stored value is no longer one of the offered options).
+    private func savedRate() -> Float {
+        let stored = UserDefaults.standard.float(forKey: rateKey)
+        return rateOptions.contains(stored) ? stored : 1.0
     }
 
     /// Saves the current progress; clears the record once playback reaches the end.
