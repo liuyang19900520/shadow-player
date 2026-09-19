@@ -4,17 +4,21 @@ import Foundation
 final class PlaylistStore: ObservableObject {
     @Published private(set) var playlists: [Playlist] = []
 
-    private let key = "playlists"
+    private static let key = "playlists"
+    private var key: String { Self.key }
 
     init() {
-        load()
+        playlists = PlaylistStore.loadAll()
     }
 
-    private func load() {
-        if let data = UserDefaults.standard.data(forKey: key),
-           let decoded = try? JSONDecoder().decode([Playlist].self, from: data) {
-            playlists = decoded
-        }
+    /// The stored playlists, without having to build a store — used to find
+    /// which playlist a video belongs to.
+    static func loadAll() -> [Playlist] {
+        guard
+            let data = UserDefaults.standard.data(forKey: key),
+            let decoded = try? JSONDecoder().decode([Playlist].self, from: data)
+        else { return [] }
+        return decoded
     }
 
     private func save() {

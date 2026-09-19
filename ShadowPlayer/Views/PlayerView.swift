@@ -12,7 +12,7 @@ struct PlayerView: View {
     @StateObject private var words: WordListStore
     @State private var isFullscreen = false
     @State private var keyboardVisible = false
-    @State private var keyboardHeight: CGFloat = 0
+    @State private var showSpeedOptions = false
     @State private var videoControlsVisible = true
     @State private var hideControlsTask: Task<Void, Never>?
 
@@ -44,10 +44,9 @@ struct PlayerView: View {
             hideControlsTask?.cancel()
             Orientation.set(.portrait) // restore portrait when leaving the player
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { note in
-            if let frame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
-                keyboardHeight = frame.height
-            }
+        // Only used to hide the A-B row while typing; the list handles the
+        // keyboard itself, so the height is no longer needed.
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             withAnimation(.easeOut(duration: 0.2)) { keyboardVisible = true }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
@@ -58,33 +57,33 @@ struct PlayerView: View {
     // MARK: - Portrait: stacked (menu / video+scrubber / word list / transport / A-B)
 
     private var portraitLayout: some View {
-        VStack(spacing: 0) {
-            topMenuBar
-                .padding(.horizontal, 14)
-                .padding(.top, 6)
-                .padding(.bottom, 8)
+        // The word list is the root view, so it alone absorbs the keyboard: its
+        // content shrinks from the bottom while the header pinned above it — the
+        // menu bar and the video — stays exactly where it is. Nesting the video
+        // in a VStack instead lets an ancestor's keyboard avoidance shift it.
+        WordListEditor(store: words, scope: TranslationScope.forVideo(video.id))
+            .safeAreaInset(edge: .top, spacing: 0) {
+                VStack(spacing: 0) {
+                    topMenuBar
+                        .padding(.horizontal, 14)
+                        .padding(.top, 6)
+                        .padding(.bottom, 8)
 
-            videoWithControls
-
-            // Word list fills the freed space below the video. While typing, lift
-            // only this area above the keyboard (the video, above it, stays put).
-            WordListEditor(store: words)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.bottom, keyboardVisible ? keyboardHeight : 0)
-
-            // A-B stays at the bottom; hidden while typing to give the word list room.
-            if !keyboardVisible {
-                abRow
-                    .padding(.horizontal, 20)
-                    .padding(.top, 10)
-                    .padding(.bottom, 10)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    videoWithControls
+                }
+                .background(Color.black)
             }
-        }
-        .background(Color.black.ignoresSafeArea())
-        // Keep the whole layout (esp. the video) fixed when the keyboard appears;
-        // the word list handles the keyboard itself via the padding above.
-        .ignoresSafeArea(.keyboard, edges: .bottom)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                // A-B stays at the bottom; hidden while typing to free up room.
+                if !keyboardVisible {
+                    abRow
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Color.black)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .background(Color.black.ignoresSafeArea())
     }
 
     /// Video (16:9) with centered transport + bottom scrubber overlaid. Both
@@ -216,19 +215,13 @@ struct PlayerView: View {
         }
     }
 
+    /// A confirmation dialog rather than a Menu: the player rebuilds its body
+    /// five times a second to move the scrubber, which keeps re-anchoring a
+    /// Menu's pop-up and makes its items nearly impossible to hit. A dialog is
+    /// driven by state, so it stays put while the body underneath churns.
     private var speedMenu: some View {
-        Menu {
-            ForEach(vm.rateOptions, id: \.self) { rate in
-                Button {
-                    vm.setRate(rate)
-                } label: {
-                    if vm.playbackRate == rate {
-                        Label(rateText(rate), systemImage: "checkmark")
-                    } else {
-                        Text(rateText(rate))
-                    }
-                }
-            }
+        Button {
+            showSpeedOptions = true
         } label: {
             Text(rateText(vm.playbackRate))
                 .font(.system(size: 14, weight: .semibold))
@@ -237,6 +230,18 @@ struct PlayerView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
                 .background(Color.black.opacity(0.45), in: Capsule())
+        }
+        .confirmationDialog(
+            "Playback speed",
+            isPresented: $showSpeedOptions,
+            titleVisibility: .visible
+        ) {
+            ForEach(vm.rateOptions, id: \.self) { rate in
+                Button(rate == vm.playbackRate ? "\(rateText(rate))  ✓" : rateText(rate)) {
+                    vm.setRate(rate)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
         }
     }
 
