@@ -11,8 +11,12 @@ struct HomeView: View {
     @State private var assignBatch: PickedBatch?
     @State private var showNewPlaylist = false
     @State private var newPlaylistName = ""
+    @State private var renamingVideo: PickedVideo?
+    @State private var renamingPlaylist: Playlist?
+    /// Shared by both rename prompts; only one can be open at a time.
+    @State private var nameDraft = ""
 
-    private let recentLimit = 3
+    private let recentLimit = 4
 
     /// Identifiable wrapper so a batch of just-picked videos can drive a sheet.
     private struct PickedBatch: Identifiable {
@@ -74,6 +78,21 @@ struct HomeView: View {
             } message: {
                 Text("Name your new playlist.")
             }
+            .renameAlert(
+                "Rename Video",
+                footnote: "Leave it empty to go back to the video's own filename.",
+                subject: $renamingVideo,
+                text: $nameDraft
+            ) { video in
+                VideoTitleStore.shared.setTitle(nameDraft, for: video.id)
+            }
+            .renameAlert(
+                "Rename Playlist",
+                subject: $renamingPlaylist,
+                text: $nameDraft
+            ) { playlist in
+                playlists.rename(playlist.id, to: nameDraft)
+            }
         }
     }
 
@@ -91,7 +110,10 @@ struct HomeView: View {
             Section("Recent") {
                 ForEach(Array(recent.items.prefix(recentLimit))) { video in
                     NavigationLink(value: video) {
-                        VideoRow(video: video)
+                        VideoRow(
+                            video: video,
+                            playlistNames: playlists.playlistNames(containing: video.id)
+                        )
                     }
                     .swipeActions(edge: .trailing) {
                         Button {
@@ -100,12 +122,24 @@ struct HomeView: View {
                             Label("Add to Playlist", systemImage: "text.badge.plus")
                         }
                         .tint(.accentColor)
+
+                        Button {
+                            beginRename(video)
+                        } label: {
+                            Label("Rename", systemImage: "pencil")
+                        }
+                        .tint(.gray)
                     }
                     .contextMenu {
                         Button {
                             assignBatch = PickedBatch(videos: [video])
                         } label: {
                             Label("Add to Playlist", systemImage: "text.badge.plus")
+                        }
+                        Button {
+                            beginRename(video)
+                        } label: {
+                            Label("Rename", systemImage: "pencil")
                         }
                     }
                 }
@@ -133,6 +167,21 @@ struct HomeView: View {
                     }
                     .padding(.vertical, 2)
                 }
+                .swipeActions(edge: .trailing) {
+                    Button {
+                        beginRename(playlist)
+                    } label: {
+                        Label("Rename", systemImage: "pencil")
+                    }
+                    .tint(.gray)
+                }
+                .contextMenu {
+                    Button {
+                        beginRename(playlist)
+                    } label: {
+                        Label("Rename", systemImage: "pencil")
+                    }
+                }
             }
             .onDelete { playlists.delete(atOffsets: $0) }
 
@@ -146,6 +195,18 @@ struct HomeView: View {
     }
 
     // MARK: - Actions
+
+    /// Prefill with the name currently on screen, so the user edits what they
+    /// see rather than starting from a blank field.
+    private func beginRename(_ video: PickedVideo) {
+        nameDraft = VideoTitleStore.shared.displayName(for: video.id) ?? ""
+        renamingVideo = video
+    }
+
+    private func beginRename(_ playlist: Playlist) {
+        nameDraft = playlist.name
+        renamingPlaylist = playlist
+    }
 
     /// Requests photo-library permission, then opens the picker.
     private func selectVideos() {

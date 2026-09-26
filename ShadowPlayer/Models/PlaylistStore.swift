@@ -50,6 +50,14 @@ final class PlaylistStore: ObservableObject {
 
     // MARK: - Membership
 
+    /// Names of every playlist holding this video, in the order they appear.
+    /// Used to mark, in Recent, which playlist a video came from.
+    func playlistNames(containing videoID: String) -> [String] {
+        playlists
+            .filter { $0.videos.contains { $0.id == videoID } }
+            .map(\.name)
+    }
+
     func contains(_ video: PickedVideo, in id: UUID) -> Bool {
         guard let i = index(of: id) else { return false }
         return playlists[i].videos.contains { $0.id == video.id }
