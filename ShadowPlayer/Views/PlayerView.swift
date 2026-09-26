@@ -13,6 +13,9 @@ struct PlayerView: View {
     @State private var isFullscreen = false
     @State private var keyboardVisible = false
     @State private var showSpeedOptions = false
+    /// Where the scrubber is being dragged to, or nil when it isn't. The thumb
+    /// is hidden mid-drag, so this drives the time read-out instead.
+    @State private var scrubTime: Double?
     @State private var videoControlsVisible = true
     @State private var hideControlsTask: Task<Void, Never>?
 
@@ -130,10 +133,17 @@ struct PlayerView: View {
                 duration: vm.duration,
                 pointA: vm.pointA,
                 pointB: vm.pointB,
-                onSeek: { vm.seek(to: $0); showVideoControls() }
+                onSeek: { vm.seek(to: $0); showVideoControls() },
+                onScrubbing: { time in
+                    // Keep the controls up as the drag begins; the hide task
+                    // then defers itself for as long as scrubbing continues.
+                    if scrubTime == nil, time != nil { showVideoControls() }
+                    scrubTime = time
+                }
             )
             HStack {
-                Text(formatTime(vm.currentTime))
+                Text(formatTime(scrubTime ?? vm.currentTime))
+                    .foregroundStyle(scrubTime == nil ? .white : Color.accentColor)
                 Spacer()
                 if vm.isLooping {
                     Label("A-B Loop", systemImage: "repeat").foregroundStyle(.tint)
@@ -169,6 +179,12 @@ struct PlayerView: View {
             try? await Task.sleep(nanoseconds: 5_000_000_000)
             guard !Task.isCancelled else { return }
             await MainActor.run {
+                // Never hide the controls out from under a finger that is
+                // still dragging the scrubber — wait and check again.
+                guard scrubTime == nil else {
+                    scheduleHideControls()
+                    return
+                }
                 withAnimation(.easeInOut(duration: 0.4)) { videoControlsVisible = false }
             }
         }

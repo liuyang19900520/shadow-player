@@ -9,9 +9,20 @@ struct ABScrubber: View {
     let pointB: Double?
     /// Callback to seek when dragging ends.
     let onSeek: (Double) -> Void
+    /// The time being scrubbed to while dragging, and nil once it ends. The
+    /// thumb is hidden mid-drag, so this is what gives the user a precise
+    /// read-out of where they are about to land.
+    var onScrubbing: ((Double?) -> Void)? = nil
 
     @State private var isDragging = false
     @State private var dragTime: Double = 0
+    /// Set when the touch landed on the thumb: the thumb is then dragged by how
+    /// far the finger moves, rather than jumping to wherever the finger landed.
+    @State private var grabbedThumb = false
+    @State private var grabStartTime: Double = 0
+
+    /// How far from the thumb's centre still counts as grabbing it.
+    private let grabRadius: CGFloat = 22
 
     private let trackHeight: CGFloat = 5
     private let thumbSize: CGFloat = 15
@@ -55,14 +66,17 @@ struct ABScrubber: View {
                         .offset(x: bX - 1)
                 }
 
-                // Draggable thumb
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: thumbSize, height: thumbSize)
-                    .shadow(radius: 2)
-                    .offset(x: progress - thumbSize / 2)
-                    .scaleEffect(isDragging ? 1.3 : 1)
-                    .animation(.easeOut(duration: 0.12), value: isDragging)
+                // Draggable thumb. Hidden while dragging: a 15pt dot can never
+                // sit exactly under a fingertip, and the gap between the two is
+                // far more distracting than having no dot at all. The filled
+                // track and the live time read-out show where you are instead.
+                if !isDragging {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: thumbSize, height: thumbSize)
+                        .shadow(radius: 2)
+                        .offset(x: progress - thumbSize / 2)
+                }
             }
             .frame(height: thumbSize)
             .frame(maxHeight: .infinity)
@@ -70,17 +84,39 @@ struct ABScrubber: View {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
-                        isDragging = true
-                        let r = min(max(0, value.location.x / width), 1)
-                        dragTime = r * duration
+                        if !isDragging {
+                            // Decide once, on touch-down, how this drag behaves.
+                            let thumbX = ratio(currentTime) * width
+                            grabbedThumb = abs(value.startLocation.x - thumbX) <= grabRadius
+                            grabStartTime = currentTime
+                            isDragging = true
+                        }
+
+                        if grabbedThumb {
+                            // Follow the finger's movement, so the thumb never
+                            // jumps away from where it was picked up.
+                            let moved = Double((value.location.x - value.startLocation.x) / width)
+                            dragTime = clampTime(grabStartTime + moved * duration)
+                        } else {
+                            // Touching the bare track scrubs to that point.
+                            dragTime = clampTime(Double(value.location.x / width) * duration)
+                        }
+                        onScrubbing?(dragTime)
                     }
                     .onEnded { _ in
                         onSeek(dragTime)
                         isDragging = false
+                        grabbedThumb = false
+                        onScrubbing?(nil)
                     }
             )
         }
         .frame(height: 28)
+    }
+
+    private func clampTime(_ time: Double) -> Double {
+        guard duration > 0 else { return 0 }
+        return min(max(0, time), duration)
     }
 
     private func ratio(_ time: Double) -> CGFloat {
