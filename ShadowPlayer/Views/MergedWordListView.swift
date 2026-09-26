@@ -16,7 +16,6 @@ struct MergedWordListView: View {
 
     @FocusState private var focused: Field?
     @State private var job: TranslationJob?
-    @State private var isTranslating = false
     @State private var showLanguages = false
     /// The row last edited, so finishing input can return to it.
     @State private var lastEditedID: UUID?
@@ -88,7 +87,6 @@ struct MergedWordListView: View {
                 .translationBackfill(job: job) { results in
                     store.applyTranslations(results)
                     job = nil
-                    isTranslating = false
                     restoreScroll(proxy)
                 }
                 .onAppear { backfill() }
@@ -112,7 +110,7 @@ struct MergedWordListView: View {
         HStack {
             Text("Words")
             Spacer()
-            if isTranslating {
+            if job != nil {
                 ProgressView().controlSize(.mini)
             }
         }
@@ -212,10 +210,13 @@ struct MergedWordListView: View {
     // MARK: - Translation
 
     private func backfill() {
-        guard showMeanings, isTranslationAvailable, !isTranslating else { return }
+        // Deliberately not guarded on "a job is already running": the task can
+        // be cancelled when the view updates, and a run that never reports back
+        // would then lock out every later attempt. Re-issuing is harmless —
+        // meanings are only filled into rows that still lack one.
+        guard showMeanings, isTranslationAvailable else { return }
         let items = store.untranslated
         guard !items.isEmpty else { return }
-        isTranslating = true
         job = TranslationJob(
             items: items,
             sourceIdentifier: sourceRaw.isEmpty ? nil : sourceRaw,

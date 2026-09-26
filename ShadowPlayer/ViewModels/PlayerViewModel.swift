@@ -38,6 +38,8 @@ final class PlayerViewModel: ObservableObject {
 
     /// Resume playback: tracks the current video identifier and the last saved progress.
     private var videoID = ""
+    /// True while a seek is in flight, so stale player ticks are ignored.
+    private var isSeeking = false
     private var lastSavedProgress: Double = 0
     private let progressKeyPrefix = "progress_"
     private var progressKey: String { progressKeyPrefix + videoID }
@@ -184,15 +186,17 @@ final class PlayerViewModel: ObservableObject {
         timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self else { return }
             let t = time.seconds
-            if t.isFinite { self.currentTime = t }
+            if t.isFinite, !self.isSeeking { self.currentTime = t }
 
             // Duration fallback: if it wasn't available at pick time, fill it from the player.
             if self.duration <= 0, let d = self.player.currentItem?.duration.seconds, d.isFinite, d > 0 {
                 self.duration = d
             }
 
-            // A-B loop: jump back to A once playback reaches B.
-            if let a = self.pointA, let b = self.pointB, t >= b - 0.03 {
+            // A-B loop: jump back to A once playback reaches B. Skipped while a
+            // seek is settling, so the ticks still reporting times near B don't
+            // fire a burst of redundant seeks.
+            if !self.isSeeking, let a = self.pointA, let b = self.pointB, t >= b - 0.03 {
                 self.preciseSeek(to: a)
             }
 
@@ -260,7 +264,13 @@ final class PlayerViewModel: ObservableObject {
     private func preciseSeek(to time: Double) {
         let target = CMTime(seconds: time, preferredTimescale: 600)
         currentTime = time
-        player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)
+        // The player keeps reporting the old position until the seek lands, so
+        // ignore those ticks — otherwise the scrubber thumb snaps back to where
+        // playback was and only catches up a moment later.
+        isSeeking = true
+        player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
+            self?.isSeeking = false
+        }
     }
 
     private func clamp(_ time: Double) -> Double {

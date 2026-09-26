@@ -50,6 +50,8 @@ private struct TranslationRunner: View {
     let onFinish: ([String: String]) -> Void
 
     @State private var configuration: TranslationSession.Configuration?
+    /// The language pair the current configuration was built for.
+    @State private var activePair: String?
 
     var body: some View {
         Color.clear
@@ -66,8 +68,21 @@ private struct TranslationRunner: View {
     private func sync(_ job: TranslationJob?) {
         guard let job, !job.items.isEmpty else {
             configuration = nil
+            activePair = nil
             return
         }
+
+        let pair = "\(job.sourceIdentifier ?? "auto")>\(job.targetIdentifier)"
+
+        // `translationTask` only re-runs when the configuration actually
+        // changes, so assigning an equal one for the same language pair would
+        // silently do nothing. Invalidating is how you ask for another run.
+        if pair == activePair, configuration != nil {
+            configuration?.invalidate()
+            return
+        }
+
+        activePair = pair
         configuration = TranslationSession.Configuration(
             source: job.sourceIdentifier.map { Locale.Language(identifier: $0) },
             target: Locale.Language(identifier: job.targetIdentifier)
@@ -77,21 +92,19 @@ private struct TranslationRunner: View {
     private func run(_ session: TranslationSession) async {
         guard let job, !job.items.isEmpty else { return }
 
-        let requests = job.items.map {
-            TranslationSession.Request(sourceText: $0.text, clientIdentifier: $0.id)
-        }
-
+        // One word at a time, keeping whatever finished. `translationTask` is
+        // cancelled whenever the view updates — and the player redraws several
+        // times a second — so a single batch call regularly threw away every
+        // result. Partial progress now survives, and the words still missing a
+        // meaning are picked up by the next run.
         var results: [String: String] = [:]
-        do {
-            for response in try await session.translations(from: requests) {
-                guard let id = response.clientIdentifier else { continue }
-                results[id] = response.targetText
+        for item in job.items {
+            do {
+                results[item.id] = try await session.translate(item.text).targetText
+            } catch {
+                // Cancelled, or the language pair is unavailable / declined.
+                break
             }
-        } catch {
-            // Languages unavailable, download declined, or the session was torn
-            // down. Leave the rows untranslated rather than surfacing an error —
-            // the user can flip the switch again to retry.
-            results = [:]
         }
 
         onFinish(results)
