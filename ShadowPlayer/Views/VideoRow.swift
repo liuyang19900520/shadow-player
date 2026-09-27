@@ -12,6 +12,7 @@ struct VideoRow: View {
     @ObservedObject private var titles = VideoTitleStore.shared
 
     private var name: String? { titles.displayName(for: video.id) }
+    private var isMissing: Bool { titles.isMissing(video.id) }
 
     /// "Japanese N3", or "Japanese N3 +2" when it is in several.
     private var playlistLabel: String? {
@@ -24,44 +25,53 @@ struct VideoRow: View {
             ThumbnailView(assetID: video.id)
                 .frame(width: 72, height: 48)
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .opacity(isMissing ? 0.4 : 1)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(name ?? formatTime(video.duration))
                     .font(name == nil ? .body.monospacedDigit() : .body)
                     .lineLimit(2)
+                    .foregroundStyle(isMissing ? .secondary : .primary)
 
-                if name != nil || playlistLabel != nil {
-                    metadata
-                }
+                metadata
             }
 
             Spacer()
 
-            Image(systemName: "play.circle.fill")
-                .font(.title2)
-                .foregroundStyle(.tint)
+            if !isMissing {
+                Image(systemName: "play.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.tint)
+            }
         }
         .padding(.vertical, 4)
-        .task(id: video.id) { await titles.loadFilename(for: video.id) }
+        .task(id: video.id) { await titles.refresh(video.id) }
     }
 
     /// Duration and playlist on one dot-separated line, the way iOS lists show
     /// secondary details. The duration is dropped when it is already the title.
     @ViewBuilder
     private var metadata: some View {
-        HStack(spacing: 4) {
-            if name != nil {
-                Text(formatTime(video.duration))
-                    .monospacedDigit()
+        if isMissing {
+            // Say so plainly: the notes are still here, the video is not.
+            Label("Not on this iPhone", systemImage: "exclamationmark.triangle")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else if name != nil || playlistLabel != nil {
+            HStack(spacing: 4) {
+                if name != nil {
+                    Text(formatTime(video.duration))
+                        .monospacedDigit()
+                }
+                if let playlistLabel {
+                    if name != nil { Text("·") }
+                    Image(systemName: "music.note.list")
+                    Text(playlistLabel)
+                        .lineLimit(1)
+                }
             }
-            if let playlistLabel {
-                if name != nil { Text("·") }
-                Image(systemName: "music.note.list")
-                Text(playlistLabel)
-                    .lineLimit(1)
-            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
-        .font(.caption)
-        .foregroundStyle(.secondary)
     }
 }

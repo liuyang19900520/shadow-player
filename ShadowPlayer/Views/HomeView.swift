@@ -40,6 +40,16 @@ struct HomeView: View {
                 playlistsSection
             }
             .navigationTitle("ShadowPlayer")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        WordListsView(playlists: playlists)
+                    } label: {
+                        Image(systemName: "text.book.closed")
+                    }
+                    .accessibilityLabel("Word Lists")
+                }
+            }
             .navigationDestination(for: PickedVideo.self) { video in
                 PlayerView(video: video, onStart: { recent.bump(video) })
             }
