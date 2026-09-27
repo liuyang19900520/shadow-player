@@ -132,7 +132,7 @@ final class PlayerViewModel: ObservableObject {
     /// Publish playback state to the system lock-screen / Control Center panel.
     func updateNowPlaying() {
         var info: [String: Any] = [:]
-        info[MPMediaItemPropertyTitle] = "ShadowPlayer"
+        info[MPMediaItemPropertyTitle] = "Kage Loop"
         info[MPMediaItemPropertyPlaybackDuration] = duration
         info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
         info[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? Double(playbackRate) : 0.0
