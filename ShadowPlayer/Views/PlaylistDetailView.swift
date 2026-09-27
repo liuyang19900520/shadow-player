@@ -7,7 +7,6 @@ struct PlaylistDetailView: View {
 
     @Environment(\.editMode) private var editMode
 
-    @State private var showMergedWords = false
     @State private var renamingPlaylist: Playlist?
     @State private var renamingVideo: PickedVideo?
     /// Shared by both rename prompts; only one can be open at a time.
@@ -17,20 +16,8 @@ struct PlaylistDetailView: View {
         store.playlists.first { $0.id == playlistID }
     }
 
-    private var videoIDs: [String] {
-        playlist?.videos.map(\.id) ?? []
-    }
-
     var body: some View {
         List {
-            Section {
-                Button {
-                    showMergedWords = true
-                } label: {
-                    Label("Combined Word List", systemImage: "square.stack.3d.up.fill")
-                }
-            }
-
             Section("Videos") {
                 if let playlist, !playlist.videos.isEmpty {
                     ForEach(playlist.videos) { video in
@@ -107,13 +94,6 @@ struct PlaylistDetailView: View {
             text: $nameDraft
         ) { video in
             VideoTitleStore.shared.setTitle(nameDraft, for: video.id)
-        }
-        .sheet(isPresented: $showMergedWords) {
-            MergedWordListView(
-                videoIDs: videoIDs,
-                // Languages belong to the playlist, so every video in it shares one pair.
-                scope: playlist.map(TranslationScope.playlist) ?? .shared
-            )
         }
     }
 
