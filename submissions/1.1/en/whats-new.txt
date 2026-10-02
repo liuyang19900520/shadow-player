@@ -1,0 +1,13 @@
+Word meanings
+Words you note can now show a meaning underneath. Translation runs entirely on your device, so nothing leaves your iPhone. Pick the audio language and the meaning language per playlist, so an English playlist and a Japanese one keep their own settings.
+
+Playback speed is remembered
+Each video reopens at the speed you last watched it.
+
+A cleaner word list
+Words and meanings now sit in a standard two-line row. Swipe to delete, and tapping Add word puts the cursor straight into the new row.
+
+Fixes
+- The video no longer shifts when the keyboard appears
+- The speed selector is much easier to tap
+- The list stays where you were after finishing input

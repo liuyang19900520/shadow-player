@@ -1,0 +1,24 @@
+Kage Loop is a minimalist video player built for one thing: repeating a section of a video until you've got it.
+
+Perfect for shadowing practice, language learning, music transcription, or drilling any passage that needs repetition.
+
+A-B REPEAT
+Mark a start point and an end point. Playback loops between them indefinitely until you cancel. Both points are visible on the scrubber, so you always know exactly what's looping.
+
+WORD LISTS
+Jot down words as you practice. Each video keeps its own list, and you can review or edit it any time without leaving the player. Turn on meanings and each word gets a translation underneath, produced entirely on your device.
+
+Your notes outlive your videos. Word Lists on the home screen shows every list you have kept, grouped by playlist and then by episode — so you can delete a video to free up space and still have the words you learned from it.
+
+PLAYLISTS
+Group related videos together and name them. Videos take their filename automatically, and episodes sort the way you read them — 02 before 10.
+
+PLAYBACK BUILT FOR PRACTICE
+• Speed from 0.8x to 1.2x with voice pitch kept natural, remembered per video
+• Tap to jump 3 seconds, or press and hold to scan
+• Resumes where you left off
+• Audio keeps playing when the screen is locked
+• Plays sound even with the silent switch on
+
+COMPLETELY PRIVATE
+No account. No network requests. No analytics. No ads. Kage Loop plays videos straight from your photo library and never copies or uploads them. Everything you create stays on your device.

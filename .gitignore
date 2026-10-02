@@ -22,5 +22,3 @@ xcuserdata/
 # Generated icon output
 scripts/icon-1024.png
 
-# App Store screenshots (build artifacts, uploaded manually)
-screenshots/*/

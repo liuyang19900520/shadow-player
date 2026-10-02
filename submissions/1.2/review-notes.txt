@@ -1,0 +1,15 @@
+Kage Loop (previously "A-B Looper ShadowPlayer") plays videos from the user's own photo library. No account or login is required. This version renames the app; the bundle identifier is unchanged.
+
+To test:
+1. Launch the app and tap "Select Video"
+2. Grant photo library access when prompted
+3. Choose any video from the library
+4. In the player, tap "Set A" and then "Set B" to create a repeating loop
+5. Turn on "Show meanings" in the word list, tap "Add word", type a word, and tap Done — a meaning appears beneath it
+6. Go back to the home screen and tap the book icon in the top right to browse saved word lists
+
+Word meanings are produced by Apple's on-device Translation framework (iOS 18+). Nothing is sent off the device, and the app still makes no network requests of its own. On iOS 17 and earlier the feature is hidden entirely. The first use of a language pair may prompt the system to download that language.
+
+The photo library permission is used only to read videos the user personally selects. The app never adds to, modifies, or deletes anything in the library.
+
+Note: the device used for review must have at least one video in the photo library.
