@@ -39,7 +39,7 @@ struct HomeView: View {
                 recentSection
                 playlistsSection
             }
-            .navigationTitle("ShadowPlayer")
+            .navigationTitle("Kage Loop")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
@@ -79,7 +79,7 @@ struct HomeView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("Please allow ShadowPlayer to access your photos in Settings to select and play videos.")
+                Text("Please allow Kage Loop to access your photos in Settings to select and play videos.")
             }
             .alert("New Playlist", isPresented: $showNewPlaylist) {
                 TextField("Name", text: $newPlaylistName)
