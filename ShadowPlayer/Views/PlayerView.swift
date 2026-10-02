@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import Combine
 
 /// Playback screen: video + scrubber (with A/B markers) + transport controls + A/B/C loop buttons.
 struct PlayerView: View {
@@ -10,6 +11,8 @@ struct PlayerView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var vm = PlayerViewModel()
     @StateObject private var words: WordListStore
+    @StateObject private var capture: LoopCaptureModel
+    @State private var showCaptureLanguages = false
     @State private var isFullscreen = false
     @State private var keyboardVisible = false
     @State private var showSpeedOptions = false
@@ -23,6 +26,10 @@ struct PlayerView: View {
         self.video = video
         self.onStart = onStart
         _words = StateObject(wrappedValue: WordListStore(videoID: video.id))
+        _capture = StateObject(wrappedValue: LoopCaptureModel(
+            videoID: video.id,
+            scope: TranslationScope.forVideo(video.id)
+        ))
     }
 
     var body: some View {
@@ -44,6 +51,7 @@ struct PlayerView: View {
         }
         .onDisappear {
             vm.cleanup()
+            capture.stop()
             hideControlsTask?.cancel()
             Orientation.set(.portrait) // restore portrait when leaving the player
         }
@@ -54,6 +62,23 @@ struct PlayerView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             withAnimation(.easeOut(duration: 0.2)) { keyboardVisible = false }
+        }
+        // Loop capture: count loops, restart on a new range, add on a shake.
+        .onReceive(vm.loopCompleted) { capture.loopCompleted() }
+        .onChange(of: vm.pointA) { _ in loopRangeChanged() }
+        .onChange(of: vm.pointB) { _ in loopRangeChanged() }
+        .onReceive(NotificationCenter.default.publisher(for: .deviceDidShake)) { _ in
+            // While typing, a shake belongs to the system's undo.
+            guard !keyboardVisible else { return }
+            capture.capture(into: words)
+        }
+        // Posted on whichever thread wrote the setting; the model lives on main.
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .receive(on: DispatchQueue.main)) { _ in
+            capture.languageMayHaveChanged()
+        }
+        .sheet(isPresented: $showCaptureLanguages) {
+            TranslationSettingsView(scope: TranslationScope.forVideo(video.id))
         }
     }
 
@@ -83,6 +108,13 @@ struct PlayerView: View {
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
                         .background(Color.black)
+                        // The offer floats just above the A-B row, over the
+                        // list, so the list doesn't jump when it comes and goes.
+                        .overlay(alignment: .top) {
+                            captureBanner
+                                .padding(.horizontal, 16)
+                                .alignmentGuide(.top) { $0[.bottom] + 8 }
+                        }
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
@@ -207,7 +239,27 @@ struct PlayerView: View {
             .padding(.top, 12)
 
             landscapeControls
+
+            VStack {
+                Spacer()
+                captureBanner
+                    .frame(maxWidth: 440)
+                    .padding(.bottom, 70) // clear of the scrubber
+            }
         }
+    }
+
+    private func loopRangeChanged() {
+        capture.loopChanged(a: vm.pointA, b: vm.pointB, asset: vm.player.currentItem?.asset)
+    }
+
+    private var captureBanner: some View {
+        LoopCaptureBanner(
+            prompt: capture.prompt,
+            onAdd: { capture.capture(into: words) },
+            onChooseLanguage: { showCaptureLanguages = true }
+        )
+        .animation(.easeOut(duration: 0.25), value: capture.prompt)
     }
 
     private var topMenuBar: some View {

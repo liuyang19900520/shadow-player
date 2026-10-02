@@ -40,6 +40,9 @@ final class PlayerViewModel: ObservableObject {
     private var videoID = ""
     /// True while a seek is in flight, so stale player ticks are ignored.
     private var isSeeking = false
+    /// Where the previous tick was, to tell playback running into B from a
+    /// seek or scan that jumped past it.
+    private var previousTick: Double = 0
     private var lastSavedProgress: Double = 0
     private let progressKeyPrefix = "progress_"
     private var progressKey: String { progressKeyPrefix + videoID }
@@ -47,6 +50,10 @@ final class PlayerViewModel: ObservableObject {
     private var rateKey: String { rateKeyPrefix + videoID }
 
     var isLooping: Bool { pointA != nil && pointB != nil }
+
+    /// Fires each time playback reaches B and jumps back to A — once per
+    /// completed loop.
+    let loopCompleted = PassthroughSubject<Void, Never>()
 
     // MARK: - Loading
 
@@ -197,8 +204,17 @@ final class PlayerViewModel: ObservableObject {
             // seek is settling, so the ticks still reporting times near B don't
             // fire a burst of redundant seeks.
             if !self.isSeeking, let a = self.pointA, let b = self.pointB, t >= b - 0.03 {
+                // Only a loop that was actually played counts — tapping +3s
+                // past B jumps back to A too, but nobody heard the line.
+                // The tick right after jumping to A can report a hair before
+                // it (time is rounded), hence the small allowance below A.
+                let playedIntoB = self.isPlaying
+                    && ((a - 0.05)..<(b - 0.03)).contains(self.previousTick)
+                    && t - self.previousTick < 0.6
                 self.preciseSeek(to: a)
+                if playedIntoB { self.loopCompleted.send() }
             }
+            if t.isFinite { self.previousTick = t }
 
             // Save progress every 5 seconds.
             if abs(t - self.lastSavedProgress) >= 5 {

@@ -41,24 +41,43 @@ final class WordListStore: ObservableObject {
         return entry.id
     }
 
+    /// Add finished lines to the end — used when a looped line is captured.
+    /// A blank row left open for typing stays last, where the user expects it.
+    func append(lines: [String]) {
+        let added = lines.map { WordEntry(text: $0) }
+        guard !added.isEmpty else { return }
+        if let blank = entries.lastIndex(where: { $0.trimmedText.isEmpty }), blank == entries.count - 1 {
+            entries.insert(contentsOf: added, at: blank)
+        } else {
+            entries.append(contentsOf: added)
+        }
+    }
+
     // MARK: - Translation
 
-    /// Rows that have a word but no meaning yet.
+    /// Rows with no meaning yet, or one written for what the word used to be.
     var untranslated: [TranslationItem] {
         entries
             .filter(\.needsTranslation)
             .map { TranslationItem(id: $0.id.uuidString, text: $0.trimmedText) }
     }
 
-    /// Fill in meanings from a finished translation batch. Rows the user has
-    /// since typed a meaning into are left alone.
-    func applyTranslations(_ results: [String: String]) {
+    /// Fill in meanings from a finished translation batch. Each result is
+    /// matched to the text that was sent, so a row edited while the batch was
+    /// running keeps waiting for its new word instead of taking the old
+    /// word's meaning. Rows given a meaning by hand meanwhile are left alone.
+    func applyTranslations(_ results: [String: String], for items: [TranslationItem]) {
         guard !results.isEmpty else { return }
-        for i in entries.indices where entries[i].needsTranslation {
-            guard let meaning = results[entries[i].id.uuidString],
-                  !meaning.isEmpty else { continue }
-            entries[i].translation = meaning
+        let sent = Dictionary(items.map { ($0.id, $0.text) }, uniquingKeysWith: { first, _ in first })
+
+        var updated = entries
+        var changed = false
+        for i in updated.indices {
+            let key = updated[i].id.uuidString
+            guard let meaning = results[key], let source = sent[key] else { continue }
+            changed = updated[i].applyTranslation(meaning, of: source) || changed
         }
+        if changed { entries = updated } // one save, not one per row
     }
 
     func remove(atOffsets offsets: IndexSet) {

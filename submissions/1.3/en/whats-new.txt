@@ -1,0 +1,11 @@
+Shake to add a line
+Loop a line three times and Kage Loop offers to add it to your word list: shake your iPhone, or tap Add. What was said is recognised on your device, and the audio never leaves your iPhone. Requires iOS 26 on a supported iPhone.
+
+Choose the audio language once per playlist
+Under Languages, pick the language spoken in a playlist's videos. Adding looped lines needs it.
+
+Long words and meanings show in full
+Long phrases and their meanings now wrap onto as many lines as they need, instead of being cut off.
+
+Meanings follow your edits
+Change a word, tap Done, and its meaning is translated again.

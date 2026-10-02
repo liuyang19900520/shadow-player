@@ -25,6 +25,20 @@ enum TranslationLanguage: String, CaseIterable, Identifiable, Codable {
         case .german: return "Deutsch"
         }
     }
+
+    /// The regional variant speech recognition asks for; the system maps it
+    /// to the closest model it has.
+    var speechLocale: Locale {
+        switch self {
+        case .chinese: return Locale(identifier: "zh_CN")
+        case .english: return Locale(identifier: "en_US")
+        case .japanese: return Locale(identifier: "ja_JP")
+        case .korean: return Locale(identifier: "ko_KR")
+        case .spanish: return Locale(identifier: "es_ES")
+        case .french: return Locale(identifier: "fr_FR")
+        case .german: return Locale(identifier: "de_DE")
+        }
+    }
 }
 
 /// Keys for the translation preferences. The switch is one app-wide setting;
@@ -34,8 +48,11 @@ enum TranslationDefaults {
     static let sourceKeyPrefix = "wordTranslationSource_"
     static let targetKeyPrefix = "wordTranslationTarget_"
 
-    /// Stored value that stands for automatic detection.
-    static let autoSource = ""
+    /// Stored value for an audio language that hasn't been chosen yet. It is
+    /// also what the old "Auto" option stored, so existing settings read as
+    /// unchosen without any migration. Meanings still work unchosen — the
+    /// translator detects the language — but capturing a looped line needs it.
+    static let unsetSource = ""
 }
 
 /// Which set of languages a word list uses. Stored per playlist, so a playlist
@@ -66,4 +83,9 @@ struct TranslationScope: Equatable {
 
     var sourceKey: String { TranslationDefaults.sourceKeyPrefix + id }
     var targetKey: String { TranslationDefaults.targetKeyPrefix + id }
+
+    /// The language spoken in these videos, or nil if it hasn't been chosen.
+    var audioLanguage: TranslationLanguage? {
+        TranslationLanguage(rawValue: UserDefaults.standard.string(forKey: sourceKey) ?? "")
+    }
 }

@@ -1,5 +1,8 @@
 # ShadowPlayer — App Store 上架合规检查清单
 
+> **存档**：这是 1.0 首次上架时的合规检查清单，部分内容（例如截图尺寸）已经过时。
+> 当前的提交资料在 [submissions/](submissions/)，通用信息在 [APP_STORE_SUBMISSION.md](APP_STORE_SUBMISSION.md)。
+
 > 审视日期：2026-08-27 ｜ 基于当前代码全盘扫描的结果
 > 用法：按「阻塞项 → 提交前必办 → 建议项」的顺序处理，勾掉一项划一项。
 

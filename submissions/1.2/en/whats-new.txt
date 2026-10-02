@@ -1,0 +1,15 @@
+A new name
+The app is now called Kage Loop. Same app, same everything you saved — just a name that says what it does.
+
+Name your videos and playlists
+Videos take their filename automatically, and you can rename any video or playlist by swiping on it. Episodes now read in order — 02 before 10 — so a lesson series is easy to follow.
+
+Word lists have their own home
+A new Word Lists button on the home screen opens every list you have kept, grouped by playlist and then by episode. Notes stay even after you delete the video from your photo library, so you can free up space without losing your words.
+
+Recent shows where a video came from
+Each recent video now names the playlist it belongs to, and Recent holds four videos instead of three.
+
+Fixes
+- The scrubber no longer jumps away from your finger while dragging
+- Tapping Done now translates right away, instead of only after reopening the video
