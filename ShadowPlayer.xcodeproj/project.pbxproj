@@ -6,6 +6,10 @@
 	objectVersion = 70;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		100000000000000000000022 /* PhraseKit in Frameworks */ = {isa = PBXBuildFile; productRef = 100000000000000000000021 /* PhraseKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		100000000000000000000004 /* ShadowPlayer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShadowPlayer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -19,6 +23,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				100000000000000000000022 /* PhraseKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -60,6 +65,9 @@
 				100000000000000000000006 /* ShadowPlayer */,
 			);
 			name = ShadowPlayer;
+			packageProductDependencies = (
+				100000000000000000000021 /* PhraseKit */,
+			);
 			productName = ShadowPlayer;
 			productReference = 100000000000000000000004 /* ShadowPlayer.app */;
 			productType = "com.apple.product-type.application";
@@ -88,6 +96,9 @@
 				Base,
 			);
 			mainGroup = 100000000000000000000002;
+			packageReferences = (
+				100000000000000000000020 /* XCLocalSwiftPackageReference "Packages/PhraseKit" */,
+			);
 			productRefGroup = 100000000000000000000003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -248,6 +259,7 @@
 				INFOPLIST_FILE = "ShadowPlayer-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Kage Loop";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Kage Loop needs access to your photo library to play videos from it.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Kage Loop turns a looped section into text on your iPhone so you can add it to your word list. The audio never leaves your device.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -280,6 +292,7 @@
 				INFOPLIST_FILE = "ShadowPlayer-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Kage Loop";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Kage Loop needs access to your photo library to play videos from it.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Kage Loop turns a looped section into text on your iPhone so you can add it to your word list. The audio never leaves your device.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -320,6 +333,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		100000000000000000000020 /* XCLocalSwiftPackageReference "Packages/PhraseKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/PhraseKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		100000000000000000000021 /* PhraseKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PhraseKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 100000000000000000000001 /* Project object */;
 }

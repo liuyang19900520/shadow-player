@@ -36,7 +36,7 @@ struct WordListEditor: View {
     init(store: WordListStore, scope: TranslationScope) {
         self.store = store
         self.scope = scope
-        _sourceRaw = AppStorage(wrappedValue: TranslationDefaults.autoSource, scope.sourceKey)
+        _sourceRaw = AppStorage(wrappedValue: TranslationDefaults.unsetSource, scope.sourceKey)
         _target = AppStorage(wrappedValue: .chinese, scope.targetKey)
     }
 
@@ -51,7 +51,7 @@ struct WordListEditor: View {
 
                 Section {
                     ForEach($store.entries) { $entry in
-                        row($entry)
+                        row($entry, proxy)
                     }
                     .onDelete { store.remove(atOffsets: $0) }
 
@@ -75,7 +75,7 @@ struct WordListEditor: View {
                 TranslationSettingsView(scope: scope)
             }
             .translationBackfill(job: job) { results in
-                store.applyTranslations(results)
+                store.applyTranslations(results, for: job?.items ?? [])
                 job = nil
                 restoreScroll(proxy)
             }
@@ -85,6 +85,8 @@ struct WordListEditor: View {
             }
             .onChange(of: sourceRaw) { _ in backfill() }
             .onChange(of: target) { _ in backfill() }
+            // Lines added by shaking during a loop arrive without a meaning.
+            .onChange(of: store.entries.count) { _ in backfill() }
             .onChange(of: focused) { field in
                 if let field { lastEditedID = field.entryID }
             }
@@ -108,49 +110,81 @@ struct WordListEditor: View {
 
     /// Settings-style rows rather than a compact header control: a full-width
     /// row gives the switch a large hit target and reads like the Settings app.
+    /// Languages stays visible with meanings off, because adding a looped line
+    /// needs the audio language too.
     @ViewBuilder
     private var translationControls: some View {
         Toggle("Show meanings", isOn: $showMeanings)
 
-        if showMeanings {
-            Button {
-                showLanguages = true
-            } label: {
-                HStack {
-                    Text("Languages")
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    Text(translationPairSummary(sourceRaw: sourceRaw, target: target))
-                        .foregroundStyle(.secondary)
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                }
+        Button {
+            showLanguages = true
+        } label: {
+            HStack {
+                Text("Languages")
+                    .foregroundStyle(.primary)
+                Spacer()
+                Text(translationPairSummary(sourceRaw: sourceRaw, target: target))
+                    .foregroundStyle(.secondary)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
             }
         }
     }
 
-    private func row(_ entry: Binding<WordEntry>) -> some View {
+    /// Both fields wrap, so a long phrase or meaning is shown in full and the
+    /// row grows to fit — the way Reminders shows a long title — rather than
+    /// being cut off at the edge.
+    private func row(_ entry: Binding<WordEntry>, _ proxy: ScrollViewProxy) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            TextField("Word", text: entry.text)
+            TextField("Word", text: wrappingLine(
+                get: { entry.wrappedValue.text },
+                set: { entry.wrappedValue.setText($0) },
+                onReturn: { finishEditing(proxy) }
+            ), axis: .vertical)
                 .font(.body)
                 .autocorrectionDisabled()
+                .submitLabel(.done)
                 .focused($focused, equals: .word(entry.wrappedValue.id))
-                .onSubmit { backfill() }
 
             if showMeanings && isTranslationAvailable {
                 // The placeholder names the language the meaning will be in.
-                TextField(target.label, text: Binding(
+                TextField(target.label, text: wrappingLine(
                     get: { entry.wrappedValue.translation ?? "" },
-                    set: { entry.wrappedValue.translation = $0.isEmpty ? nil : $0 }
-                ))
+                    set: { entry.wrappedValue.setMeaning($0) },
+                    onReturn: { finishEditing(proxy) }
+                ), axis: .vertical)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .autocorrectionDisabled()
+                .submitLabel(.done)
                 .focused($focused, equals: .meaning(entry.wrappedValue.id))
             }
         }
         .padding(.vertical, 2)
+    }
+
+    /// Text for a field that wraps onto several lines but holds a single line
+    /// of text. A wrapping field turns Return into a line break, so a Return
+    /// on its own finishes editing instead — the key is labelled Done — and
+    /// line breaks pasted in become spaces.
+    private func wrappingLine(
+        get: @escaping () -> String,
+        set: @escaping (String) -> Void,
+        onReturn: @escaping () -> Void
+    ) -> Binding<String> {
+        Binding(get: get) { newValue in
+            guard newValue.contains(where: \.isNewline) else {
+                set(newValue)
+                return
+            }
+            if newValue.filter({ !$0.isNewline }) == get() {
+                // Only a line break was added: Return was pressed.
+                DispatchQueue.main.async(execute: onReturn)
+            } else {
+                set(newValue.split(whereSeparator: \.isNewline).joined(separator: " "))
+            }
+        }
     }
 
     /// One blank row at a time — a second tap would only leave stray empty

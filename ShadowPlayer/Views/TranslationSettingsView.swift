@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Picks the language pair used for word meanings. Presented as a sheet so the
+/// Picks the audio language and the language meanings are written in. Presented as a sheet so the
 /// choices are plain list rows: pop-up menus anchored inside the player are
 /// unreliable, because the player rebuilds its body several times a second.
 struct TranslationSettingsView: View {
@@ -13,7 +13,7 @@ struct TranslationSettingsView: View {
 
     init(scope: TranslationScope) {
         self.scope = scope
-        _sourceRaw = AppStorage(wrappedValue: TranslationDefaults.autoSource, scope.sourceKey)
+        _sourceRaw = AppStorage(wrappedValue: TranslationDefaults.unsetSource, scope.sourceKey)
         _target = AppStorage(wrappedValue: .chinese, scope.targetKey)
     }
 
@@ -21,18 +21,31 @@ struct TranslationSettingsView: View {
         NavigationStack {
             List {
                 Section {
-                    Picker("Audio language", selection: $sourceRaw) {
-                        Text("Auto").tag(TranslationDefaults.autoSource)
-                        ForEach(TranslationLanguage.allCases) { language in
-                            Text(language.label).tag(language.rawValue)
+                    // Plain rows rather than a Picker: nothing is ticked until a
+                    // language is chosen, and a Picker whose selection matches
+                    // no row complains at run time.
+                    ForEach(TranslationLanguage.allCases) { language in
+                        Button {
+                            sourceRaw = language.rawValue
+                        } label: {
+                            HStack {
+                                Text(language.label)
+                                Spacer()
+                                if sourceRaw == language.rawValue {
+                                    Image(systemName: "checkmark")
+                                        .font(.body.weight(.semibold))
+                                        .foregroundStyle(Color.accentColor)
+                                }
+                            }
                         }
+                        // A list tints button labels with the accent colour;
+                        // these should read like the picker rows below them.
+                        .tint(.primary)
                     }
-                    .pickerStyle(.inline)
-                    .labelsHidden()
                 } header: {
                     Text("Audio language")
                 } footer: {
-                    Text("The language spoken in the video — the language you write words in. Auto lets the translator detect it.")
+                    Text("The language spoken in the video. Adding a looped line to your words needs it; meanings work without it.")
                 }
 
                 Section {
@@ -70,6 +83,6 @@ struct TranslationSettingsView: View {
 
 /// "日本語 → 中文", for the row that opens the sheet.
 func translationPairSummary(sourceRaw: String, target: TranslationLanguage) -> String {
-    let from = TranslationLanguage(rawValue: sourceRaw)?.label ?? "Auto"
+    let from = TranslationLanguage(rawValue: sourceRaw)?.label ?? "Not set"
     return "\(from) → \(target.label)"
 }
