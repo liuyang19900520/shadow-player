@@ -54,7 +54,7 @@ struct HomeView: View {
                 PlayerView(video: video, onStart: { recent.bump(video) })
             }
             .navigationDestination(for: Playlist.self) { playlist in
-                PlaylistDetailView(playlistID: playlist.id, store: playlists)
+                PlaylistDetailView(playlistID: playlist.id, store: playlists, recent: recent)
             }
             .sheet(isPresented: $showPicker) {
                 VideoPicker(onPicked: { picked in
@@ -71,16 +71,7 @@ struct HomeView: View {
             .sheet(item: $assignBatch) { batch in
                 AddToPlaylistView(videos: batch.videos, store: playlists)
             }
-            .alert("Can’t Access Photos", isPresented: $showDeniedAlert) {
-                Button("Open Settings") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
-                    }
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("Please allow Kage Loop to access your photos in Settings to select and play videos.")
-            }
+            .photoAccessDeniedAlert(isPresented: $showDeniedAlert)
             .alert("New Playlist", isPresented: $showNewPlaylist) {
                 TextField("Name", text: $newPlaylistName)
                 Button("Create") { playlists.create(name: newPlaylistName) }
@@ -221,11 +212,7 @@ struct HomeView: View {
     /// Requests photo-library permission, then opens the picker.
     private func selectVideos() {
         Task {
-            // PHAccessLevel only offers .addOnly / .readWrite — there is no
-            // read-only level, so .readWrite is required just to read the library.
-            // The app never adds to or modifies the user's photos.
-            let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
-            if status == .authorized || status == .limited {
+            if await VideoPicker.requestAccess() {
                 showPicker = true
             } else {
                 showDeniedAlert = true

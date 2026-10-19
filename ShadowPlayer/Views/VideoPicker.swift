@@ -7,6 +7,15 @@ import Photos
 struct VideoPicker: UIViewControllerRepresentable {
     let onPicked: ([PickedVideo]) -> Void
 
+    /// Asks for photo-library access; true when the picker may be shown.
+    static func requestAccess() async -> Bool {
+        // PHAccessLevel only offers .addOnly / .readWrite — there is no
+        // read-only level, so .readWrite is required just to read the library.
+        // The app never adds to or modifies the user's photos.
+        let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        return status == .authorized || status == .limited
+    }
+
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var config = PHPickerConfiguration(photoLibrary: .shared())
         config.filter = .videos
@@ -46,6 +55,22 @@ struct VideoPicker: UIViewControllerRepresentable {
                 return PickedVideo(id: id, duration: asset.duration)
             }
             onPicked(items)
+        }
+    }
+}
+
+extension View {
+    /// Shown when photo-library access was refused, pointing to Settings.
+    func photoAccessDeniedAlert(isPresented: Binding<Bool>) -> some View {
+        alert("Can’t Access Photos", isPresented: isPresented) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Please allow Kage Loop to access your photos in Settings to select and play videos.")
         }
     }
 }
