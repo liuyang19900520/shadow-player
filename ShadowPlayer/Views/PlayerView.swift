@@ -12,6 +12,7 @@ struct PlayerView: View {
     @StateObject private var vm = PlayerViewModel()
     @StateObject private var words: WordListStore
     @StateObject private var capture: LoopCaptureModel
+    @StateObject private var practice: PracticeTracker
     @State private var showCaptureLanguages = false
     @State private var isFullscreen = false
     @State private var keyboardVisible = false
@@ -30,6 +31,7 @@ struct PlayerView: View {
             videoID: video.id,
             scope: TranslationScope.forVideo(video.id)
         ))
+        _practice = StateObject(wrappedValue: PracticeTracker(videoID: video.id))
     }
 
     var body: some View {
@@ -63,8 +65,12 @@ struct PlayerView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             withAnimation(.easeOut(duration: 0.2)) { keyboardVisible = false }
         }
-        // Loop capture: count loops, restart on a new range, add on a shake.
-        .onReceive(vm.loopCompleted) { capture.loopCompleted() }
+        // Loop capture and check-in: count loops, restart on a new range,
+        // add on a shake.
+        .onReceive(vm.loopCompleted) {
+            capture.loopCompleted()
+            practice.loopCompleted()
+        }
         .onChange(of: vm.pointA) { _ in loopRangeChanged() }
         .onChange(of: vm.pointB) { _ in loopRangeChanged() }
         .onReceive(NotificationCenter.default.publisher(for: .deviceDidShake)) { _ in
@@ -251,6 +257,7 @@ struct PlayerView: View {
 
     private func loopRangeChanged() {
         capture.loopChanged(a: vm.pointA, b: vm.pointB, asset: vm.player.currentItem?.asset)
+        practice.loopChanged(a: vm.pointA, b: vm.pointB)
     }
 
     private var captureBanner: some View {

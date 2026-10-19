@@ -28,6 +28,8 @@ EOF
 fi
 if [[ -z "$DEVICE" ]]; then
   echo "No connected iPhone found. Plug it in, unlock it, and trust this Mac." >&2
+  echo "A paired phone that shows as 'available' often still works when named directly:" >&2
+  echo "  xcrun devicectl list devices   # then: $0 <identifier>" >&2
   exit 1
 fi
 echo "==> Device: $DEVICE"

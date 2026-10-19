@@ -75,3 +75,40 @@ struct VideoRow: View {
         }
     }
 }
+
+/// Home's Continue row: a larger thumbnail, and where playback was left off.
+struct ContinueRow: View {
+    let video: PickedVideo
+
+    @ObservedObject private var titles = VideoTitleStore.shared
+
+    /// Saved by the player as it plays; cleared once a video is finished.
+    private var position: Double {
+        UserDefaults.standard.double(forKey: "progress_" + video.id)
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ThumbnailView(assetID: video.id)
+                .frame(width: 96, height: 60)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(titles.displayName(for: video.id) ?? "Untitled video")
+                    .font(.body.weight(.medium))
+                    .lineLimit(2)
+                Text("\(formatTime(position)) / \(formatTime(video.duration))")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                ProgressView(value: video.duration > 0 ? min(position / video.duration, 1) : 0)
+                    .tint(.accentColor)
+            }
+
+            Image(systemName: "play.circle.fill")
+                .font(.title)
+                .foregroundStyle(.tint)
+        }
+        .padding(.vertical, 4)
+        .task(id: video.id) { await titles.refresh(video.id) }
+    }
+}

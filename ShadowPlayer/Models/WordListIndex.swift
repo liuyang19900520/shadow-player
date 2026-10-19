@@ -1,4 +1,5 @@
 import Foundation
+import PracticeKit
 
 /// Finds every saved word list by scanning the stored keys.
 ///
@@ -23,5 +24,24 @@ enum WordListIndex {
 
     static func wordCount(for videoID: String) -> Int {
         WordListStore.load(videoID: videoID).filter { !$0.trimmedText.isEmpty }.count
+    }
+
+    /// Words added on `day`, by the language of the playlist their video is in.
+    /// Words saved before rows had a date, and blank rows, count toward no day.
+    static func wordsAdded(on day: DayKey) -> (total: Int, byLanguage: [PracticeLanguage: Int]) {
+        var total = 0
+        var byLanguage: [PracticeLanguage: Int] = [:]
+        for (videoID, _) in listsWithWords() {
+            let count = WordListStore.load(videoID: videoID).filter { entry in
+                guard let createdAt = entry.createdAt, !entry.trimmedText.isEmpty else { return false }
+                return DayKey(createdAt) == day
+            }.count
+            guard count > 0 else { continue }
+            total += count
+            if let language = PracticeLanguage(TranslationScope.forVideo(videoID).audioLanguage) {
+                byLanguage[language, default: 0] += count
+            }
+        }
+        return (total, byLanguage)
     }
 }
