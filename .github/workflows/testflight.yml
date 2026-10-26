@@ -1,0 +1,55 @@
+# Archive, sign, and upload Kage Loop to TestFlight on every push to master,
+# or by hand from the Actions tab. Uploading never submits for review; that
+# stays a manual step in App Store Connect.
+name: TestFlight
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+# One upload at a time, and never cancel one halfway through.
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode version
+        run: xcodebuild -version
+
+      # Build numbers only ever go up: this run's number, offset past the
+      # builds uploaded before this workflow existed (1.3 was build 4).
+      # Raise the BUILD_NUMBER_OFFSET repository variable if App Store
+      # Connect ever rejects a number as already used.
+      - name: Choose build number
+        env:
+          OFFSET: ${{ vars.BUILD_NUMBER_OFFSET || '4' }}
+        run: echo "BUILD_NUMBER=$(( ${{ github.run_number }} + OFFSET ))" >> "$GITHUB_ENV"
+
+      # Automatic signing stores the certificate it fetches in the default
+      # keychain; give it a fresh, unlocked one that disappears with the runner.
+      - name: Create keychain
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/release.keychain-db"
+          PASSWORD="$(uuidgen)"
+          security create-keychain -p "$PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          security default-keychain -s "$KEYCHAIN"
+
+      - name: Archive and upload
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: scripts/ci/testflight.sh
+
+      - name: Summary
+        run: echo "Uploaded build $BUILD_NUMBER. Check TestFlight in App Store Connect once processing finishes." >> "$GITHUB_STEP_SUMMARY"
