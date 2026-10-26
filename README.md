@@ -56,6 +56,26 @@ It never submits for review. The build number is the run number plus the
 `MARKETING_VERSION` in the project, so bump it there for a new release.
 Required secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID`, and `ASC_KEY_P8` (the `.p8` file's text, or base64 of it).
 
+## Submitting for App Store review
+
+Once a TestFlight build has finished processing, the **Submit for review**
+workflow (`.github/workflows/submit-review.yml` → `scripts/ci/submit-review.py`)
+attaches it to the App Store version, fills What's New and review notes from
+`submissions/<version>/`, and submits it. It only runs by hand.
+
+From the GitHub phone app: repository → **Actions** → **Submit for review** →
+**Run workflow**, then fill in:
+
+- **version**: e.g. `1.4`
+- **build**: leave empty for the newest processed build
+- **release_type**: `manual` (release yourself after approval) or `automatic`
+- **dry_run**: keep on for the first run; it only reads and prints the plan
+- **confirm**: type `SUBMIT`
+
+Check the dry-run log, then run again with dry_run off. Screenshots, privacy
+answers, and other version-level settings must already be in App Store Connect;
+if anything is missing the run stops and prints Apple's error.
+
 ## 分支规则
 
 - `develop`:日常开发的主线。合并到这里会自动上传 TestFlight 供验证。
