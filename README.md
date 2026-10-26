@@ -48,10 +48,16 @@ written to `ShadowPlayer/Assets.xcassets/AppIcon.appiconset/`.
 
 ## Releasing to TestFlight
 
-Every push to `master`, or a manual run of the **TestFlight** workflow, archives
+Every push to `develop`, or a manual run of the **TestFlight** workflow, archives
 the app, signs it automatically with an App Store Connect API key, and uploads
 it to TestFlight (`.github/workflows/testflight.yml` → `scripts/ci/testflight.sh`).
 It never submits for review. The build number is the run number plus the
 `BUILD_NUMBER_OFFSET` repository variable (default 4). The version comes from
 `MARKETING_VERSION` in the project, so bump it there for a new release.
 Required secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID`, and `ASC_KEY_P8` (the `.p8` file's text, or base64 of it).
+
+## 分支规则
+
+- `develop`:日常开发的主线。合并到这里会自动上传 TestFlight 供验证。
+- `master`:只放已经上线 App Store 的版本。苹果审核通过上线后,把 `develop` 合并进 `master` 并打版本标签(如 `v1.4`)。
+- 提交审核用 Submit for review 流程,对象是 TestFlight 里已验证的 build。
