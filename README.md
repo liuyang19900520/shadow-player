@@ -48,7 +48,7 @@ written to `ShadowPlayer/Assets.xcassets/AppIcon.appiconset/`.
 
 ## Releasing to TestFlight
 
-Every push to `master`, or a manual run of the **TestFlight** workflow, archives
+Every push to `develop`, or a manual run of the **TestFlight** workflow, archives
 the app, signs it automatically with an App Store Connect API key, and uploads
 it to TestFlight (`.github/workflows/testflight.yml` → `scripts/ci/testflight.sh`).
 It never submits for review. The build number is the run number plus the
@@ -75,3 +75,9 @@ From the GitHub phone app: repository → **Actions** → **Submit for review** 
 Check the dry-run log, then run again with dry_run off. Screenshots, privacy
 answers, and other version-level settings must already be in App Store Connect;
 if anything is missing the run stops and prints Apple's error.
+
+## 分支规则
+
+- `develop`:日常开发的主线。合并到这里会自动上传 TestFlight 供验证。
+- `master`:只放已经上线 App Store 的版本。苹果审核通过上线后,把 `develop` 合并进 `master` 并打版本标签(如 `v1.4`)。
+- 提交审核用 Submit for review 流程,对象是 TestFlight 里已验证的 build。
