@@ -1,11 +1,11 @@
-# Archive, sign, and upload Kage Loop to TestFlight on every push to master,
+# Archive, sign, and upload Kage Loop to TestFlight on every push to develop,
 # or by hand from the Actions tab. Uploading never submits for review; that
 # stays a manual step in App Store Connect.
 name: TestFlight
 
 on:
   push:
-    branches: [master]
+    branches: [develop]
   workflow_dispatch:
 
 # One upload at a time, and never cancel one halfway through.
