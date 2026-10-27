@@ -35,8 +35,10 @@ final class PracticeTracker: ObservableObject {
         guard loops == LoopCaptureModel.loopsBeforeOffer else { return }
 
         // The language is read now, not when the player opened, so choosing
-        // it mid-session still counts this loop.
+        // it mid-session still counts this loop. Videos outside any playlist
+        // don't count, even if the shared default has a language set.
         guard
+            TranslationScope.isInPlaylist(videoID),
             let language = PracticeLanguage(TranslationScope.forVideo(videoID).audioLanguage),
             let day = PracticeRules.countingDay(for: now)
         else { return }

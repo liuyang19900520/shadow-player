@@ -88,4 +88,13 @@ struct TranslationScope: Equatable {
     var audioLanguage: TranslationLanguage? {
         TranslationLanguage(rawValue: UserDefaults.standard.string(forKey: sourceKey) ?? "")
     }
+
+    /// Whether `videoID` belongs to an actual playlist, as opposed to falling
+    /// back to `.shared`. The check-in only counts videos that are in a
+    /// playlist, even if the shared default happens to have a language set.
+    static func isInPlaylist(_ videoID: String) -> Bool {
+        PlaylistStore.loadAll().contains { playlist in
+            playlist.videos.contains { $0.id == videoID }
+        }
+    }
 }

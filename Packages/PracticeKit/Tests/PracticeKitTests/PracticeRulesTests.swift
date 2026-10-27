@@ -80,6 +80,12 @@ final class PracticeRulesTests: XCTestCase {
         XCTAssertEqual(oct1.description, "2026-10-01")
     }
 
+    func testDayKeyCodableRoundTrips() throws {
+        let day = DayKey(year: 2026, month: 1, day: 9)
+        let data = try JSONEncoder().encode(day)
+        XCTAssertEqual(try JSONDecoder().decode(DayKey.self, from: data), day)
+    }
+
     // MARK: - Marks
 
     func testMarks() {
@@ -97,5 +103,25 @@ final class PracticeRulesTests: XCTestCase {
         XCTAssertEqual(mark(past, DaySummary(english: 900, japanese: 900)), .progress(english: true, japanese: true))
         // Today is never missed while it is still going.
         XCTAssertEqual(mark(today, nil), .progress(english: false, japanese: false))
+        // The tracking-since day itself is included, not blank.
+        XCTAssertEqual(mark(since, nil), .missed)
+    }
+
+    // MARK: - Languages
+
+    func testLanguagesOnTheSameVideoDoNotMix() {
+        // Shouldn't happen in the app (one video has one tracked language),
+        // but the rule itself must still keep each language's union separate.
+        let segments = [
+            segment(0, 60, video: "v1", .english),
+            segment(30, 90, video: "v1", .japanese),
+        ]
+        let summary = PracticeRules.summaries(segments)[today]
+        XCTAssertEqual(summary, DaySummary(english: 60, japanese: 60))
+    }
+
+    func testDaysWithNoSegmentsHaveNoSummary() {
+        XCTAssertTrue(PracticeRules.summaries([]).isEmpty)
+        XCTAssertNil(PracticeRules.summaries([segment(0, 10)])[today.adding(days: 1)])
     }
 }

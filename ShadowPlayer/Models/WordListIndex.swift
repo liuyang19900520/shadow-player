@@ -38,7 +38,10 @@ enum WordListIndex {
             }.count
             guard count > 0 else { continue }
             total += count
-            if let language = PracticeLanguage(TranslationScope.forVideo(videoID).audioLanguage) {
+            // Only videos actually in a playlist get a tracked language; the
+            // shared default can't be mistaken for one.
+            if TranslationScope.isInPlaylist(videoID),
+               let language = PracticeLanguage(TranslationScope.forVideo(videoID).audioLanguage) {
                 byLanguage[language, default: 0] += count
             }
         }
