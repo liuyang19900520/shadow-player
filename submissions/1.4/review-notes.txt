@@ -1,0 +1,19 @@
+Kage Loop plays videos from the user's own photo library. No account or login is required.
+
+To test the core features:
+1. Launch the app, tap "+" at the top right of Home, choose to add a video from Photos, allow photo library access, and pick any video in which someone speaks. Assign it to a playlist.
+2. In the player, tap "Set A", let it play a few seconds, then tap "Set B". The section repeats.
+3. In the word list, turn on "Show meanings", tap "Add word", type a word and tap Done. A meaning appears beneath it.
+
+New in 1.4, daily close-reading check-in:
+4. In the word list, tap "Languages" and set the playlist's audio language to English or Japanese.
+5. Let an A-B section repeat three times (between 5:00 and 23:00 local time). Return to Home: the Today card shows the section's length added to that language's minutes (goal: 15 minutes per language per day).
+6. Tap the Today card to open the monthly calendar, and tap a day to see its minutes and new words.
+
+Check-in data is stored only on the device. It is not synced, and the app makes no network requests of its own. There are no notifications and no account.
+
+The shake-to-add feature from 1.3 is unchanged: it uses Apple's on-device speech recognition (iOS 26) and is hidden on devices that do not support it. Word meanings use Apple's on-device Translation framework (iOS 18 and later).
+
+The photo library permission is used only to read videos the user selects. The app never adds to, modifies, or deletes anything in the library.
+
+Note: the review device needs at least one video with speech in its photo library.
