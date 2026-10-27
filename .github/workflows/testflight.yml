@@ -6,6 +6,15 @@ name: TestFlight
 on:
   push:
     branches: [develop]
+    # Docs-only pushes don't change the app, so they shouldn't spend a build.
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "design/**"
+      - "submissions/**"
+      - "AGENTS.md"
+      - "PLAN.md"
+      - "CLAUDE.md"
   workflow_dispatch:
 
 # One upload at a time, and never cancel one halfway through.
