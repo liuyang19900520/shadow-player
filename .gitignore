@@ -22,3 +22,6 @@ xcuserdata/
 # Generated icon output
 scripts/icon-1024.png
 
+
+__pycache__/
+*.pyc
