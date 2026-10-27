@@ -134,7 +134,7 @@ struct TodayCard: View {
     private func progressLine(_ language: PracticeLanguage, _ summary: DaySummary) -> some View {
         HStack(spacing: 4) {
             Text(language.label)
-            Text("\(min(practiceMinutes(summary.seconds(for: language)), 999)) / 15 min")
+            Text("\(min(practiceMinutes(summary.seconds(for: language)), 999)) / 5 min")
                 .monospacedDigit()
             if summary.isComplete(language) {
                 Image(systemName: "checkmark")
@@ -367,7 +367,7 @@ struct CheckInDayView: View {
                             .fontWeight(.semibold)
                     }
                 } footer: {
-                    Text("A stretch counts once its A-B loop plays \(LoopCaptureModel.loopsBeforeOffer) times between 5:00 and 23:00. Each language needs 15 minutes of video a day.")
+                    Text("A stretch counts once its A-B loop plays \(LoopCaptureModel.loopsBeforeOffer) times between 5:00 and 23:00. Each language needs 5 minutes of video a day.")
                 }
             }
             .navigationTitle(title(isToday: isToday))
