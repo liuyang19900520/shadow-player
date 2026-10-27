@@ -1,9 +1,12 @@
 import SwiftUI
 
-/// A playlist's videos: tap to play, swipe to remove or rename, Edit to reorder.
+/// A playlist's videos: add from Photos, tap to play, swipe to remove or
+/// rename, Edit to reorder.
 struct PlaylistDetailView: View {
     let playlistID: UUID
     @ObservedObject var store: PlaylistStore
+    /// Videos added here also land in Recent, as they do from Home.
+    @ObservedObject var recent: RecentStore
 
     @Environment(\.editMode) private var editMode
 
@@ -11,6 +14,8 @@ struct PlaylistDetailView: View {
     @State private var renamingVideo: PickedVideo?
     /// Shared by both rename prompts; only one can be open at a time.
     @State private var nameDraft = ""
+    @State private var showPicker = false
+    @State private var showDeniedAlert = false
 
     private var playlist: Playlist? {
         store.playlists.first { $0.id == playlistID }
@@ -43,7 +48,7 @@ struct PlaylistDetailView: View {
                     .onDelete { store.removeVideos(atOffsets: $0, from: playlistID) }
                     .onMove { store.moveVideos(fromOffsets: $0, toOffset: $1, in: playlistID) }
                 } else {
-                    Text("No videos yet. Add videos from the Recent list.")
+                    Text("No videos yet. Tap + to add some from Photos.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -51,14 +56,21 @@ struct PlaylistDetailView: View {
         }
         .navigationTitle(playlist?.name ?? "Playlist")
         .navigationBarTitleDisplayMode(.inline)
-        // One trailing control, not two: the menu holds everything that manages
-        // the playlist, and becomes Done while reordering — the way Files and
-        // Photos do it. A permanent Edit button beside the menu duplicated it.
+        // + adds videos, as on Home; the menu holds everything else that
+        // manages the playlist. Both give way to Done while reordering — the
+        // way Files and Photos do it.
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
                 if isEditing {
                     Button("Done") { setEditing(false) }
                 } else {
+                    Button {
+                        selectVideos()
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityLabel("Add Videos")
+
                     Menu {
                         Button {
                             nameDraft = playlist?.name ?? ""
@@ -80,6 +92,15 @@ struct PlaylistDetailView: View {
                 }
             }
         }
+        .sheet(isPresented: $showPicker) {
+            VideoPicker(onPicked: { picked in
+                guard !picked.isEmpty else { return }
+                recent.addMany(picked)
+                store.setMembership(picked, in: playlistID, add: true)
+            })
+            .ignoresSafeArea()
+        }
+        .photoAccessDeniedAlert(isPresented: $showDeniedAlert)
         .renameAlert(
             "Rename Playlist",
             subject: $renamingPlaylist,
@@ -101,6 +122,16 @@ struct PlaylistDetailView: View {
 
     private func setEditing(_ on: Bool) {
         withAnimation { editMode?.wrappedValue = on ? .active : .inactive }
+    }
+
+    private func selectVideos() {
+        Task {
+            if await VideoPicker.requestAccess() {
+                showPicker = true
+            } else {
+                showDeniedAlert = true
+            }
+        }
     }
 
     /// Prefill with the name currently on screen, so the user edits what they

@@ -12,6 +12,9 @@ struct WordEntry: Identifiable, Hashable, Codable {
     /// lists saved before this existed, until the word is next edited — so an
     /// update never re-translates a whole list on its own.
     var meaningSource: String?
+    /// When the row was added, for the check-in's daily word count. Nil in
+    /// lists saved before this existed; those words count toward no day.
+    var createdAt: Date?
 
     var trimmedText: String {
         text.trimmingCharacters(in: .whitespacesAndNewlines)

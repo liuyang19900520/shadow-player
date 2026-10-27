@@ -4,8 +4,12 @@ import Foundation
 /// most recently played first.
 final class RecentStore: ObservableObject {
     @Published private(set) var items: [PickedVideo] = []
+    /// The video last opened in the player, for Home's Continue row. Kept
+    /// apart from the list order, which newly picked videos also change.
+    @Published private(set) var lastPlayedID: String?
 
     private let key = "recentVideos"
+    private let lastPlayedKey = "lastPlayedVideo"
 
     private struct Record: Codable {
         let id: String
@@ -14,6 +18,12 @@ final class RecentStore: ObservableObject {
 
     init() {
         load()
+        lastPlayedID = UserDefaults.standard.string(forKey: lastPlayedKey)
+    }
+
+    /// The last played video, if it is still in the list.
+    var lastPlayed: PickedVideo? {
+        items.first { $0.id == lastPlayedID }
     }
 
     private func load() {
@@ -41,11 +51,13 @@ final class RecentStore: ObservableObject {
         var list = items.filter { $0.id != video.id }
         list.insert(video, at: 0)
         items = list
+        lastPlayedID = video.id
+        UserDefaults.standard.set(video.id, forKey: lastPlayedKey)
         save()
     }
 
-    func remove(atOffsets offsets: IndexSet) {
-        items.remove(atOffsets: offsets)
+    func remove(_ video: PickedVideo) {
+        items.removeAll { $0.id == video.id }
         save()
     }
 

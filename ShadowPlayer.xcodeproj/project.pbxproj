@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		100000000000000000000022 /* PhraseKit in Frameworks */ = {isa = PBXBuildFile; productRef = 100000000000000000000021 /* PhraseKit */; };
+		100000000000000000000025 /* PracticeKit in Frameworks */ = {isa = PBXBuildFile; productRef = 100000000000000000000024 /* PracticeKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				100000000000000000000022 /* PhraseKit in Frameworks */,
+				100000000000000000000025 /* PracticeKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -67,6 +69,7 @@
 			name = ShadowPlayer;
 			packageProductDependencies = (
 				100000000000000000000021 /* PhraseKit */,
+				100000000000000000000024 /* PracticeKit */,
 			);
 			productName = ShadowPlayer;
 			productReference = 100000000000000000000004 /* ShadowPlayer.app */;
@@ -98,6 +101,7 @@
 			mainGroup = 100000000000000000000002;
 			packageReferences = (
 				100000000000000000000020 /* XCLocalSwiftPackageReference "Packages/PhraseKit" */,
+				100000000000000000000023 /* XCLocalSwiftPackageReference "Packages/PracticeKit" */,
 			);
 			productRefGroup = 100000000000000000000003 /* Products */;
 			projectDirPath = "";
@@ -339,12 +343,21 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/PhraseKit;
 		};
+		100000000000000000000023 /* XCLocalSwiftPackageReference "Packages/PracticeKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/PracticeKit;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		100000000000000000000021 /* PhraseKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = PhraseKit;
+		};
+		100000000000000000000024 /* PracticeKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 100000000000000000000023 /* XCLocalSwiftPackageReference "Packages/PracticeKit" */;
+			productName = PracticeKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -36,7 +36,7 @@ final class WordListStore: ObservableObject {
     /// caller can put the keyboard straight into it.
     @discardableResult
     func addEmpty() -> UUID {
-        let entry = WordEntry()
+        let entry = WordEntry(createdAt: Date())
         entries.append(entry)
         return entry.id
     }
@@ -44,7 +44,7 @@ final class WordListStore: ObservableObject {
     /// Add finished lines to the end — used when a looped line is captured.
     /// A blank row left open for typing stays last, where the user expects it.
     func append(lines: [String]) {
-        let added = lines.map { WordEntry(text: $0) }
+        let added = lines.map { WordEntry(text: $0, createdAt: Date()) }
         guard !added.isEmpty else { return }
         if let blank = entries.lastIndex(where: { $0.trimmedText.isEmpty }), blank == entries.count - 1 {
             entries.insert(contentsOf: added, at: blank)

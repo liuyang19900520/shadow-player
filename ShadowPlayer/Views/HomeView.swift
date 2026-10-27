@@ -1,10 +1,12 @@
 import SwiftUI
-import Photos
 
-/// First screen: pick a video, recent playback (last 3), and playlists.
+/// First screen, ordered by what a study session does next: today's check-in,
+/// the video to pick up again, then Recent and Playlists. Adding videos and
+/// playlists lives in the + menu, since it happens far less often than playing.
 struct HomeView: View {
     @StateObject private var recent = RecentStore()
     @StateObject private var playlists = PlaylistStore()
+    @ObservedObject private var practice = PracticeLogStore.shared
 
     @State private var showPicker = false
     @State private var showDeniedAlert = false
@@ -28,33 +30,54 @@ struct HomeView: View {
         NavigationStack {
             List {
                 Section {
-                    Button {
-                        selectVideos()
+                    NavigationLink {
+                        CheckInCalendarView(log: practice)
                     } label: {
-                        Label("Select Video", systemImage: "plus.circle.fill")
-                            .font(.body.weight(.medium))
+                        TodayCard(log: practice)
                     }
                 }
 
-                recentSection
-                playlistsSection
+                if recent.items.isEmpty && playlists.playlists.isEmpty {
+                    emptyState
+                } else {
+                    continueSection
+                    recentSection
+                    playlistsSection
+                }
             }
             .navigationTitle("Kage Loop")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
                     NavigationLink {
                         WordListsView(playlists: playlists)
                     } label: {
                         Image(systemName: "text.book.closed")
                     }
                     .accessibilityLabel("Word Lists")
+
+                    Menu {
+                        Button {
+                            selectVideos()
+                        } label: {
+                            Label("Add Videos", systemImage: "photo.on.rectangle")
+                        }
+                        Button {
+                            newPlaylistName = ""
+                            showNewPlaylist = true
+                        } label: {
+                            Label("New Playlist", systemImage: "music.note.list")
+                        }
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityLabel("Add")
                 }
             }
             .navigationDestination(for: PickedVideo.self) { video in
                 PlayerView(video: video, onStart: { recent.bump(video) })
             }
             .navigationDestination(for: Playlist.self) { playlist in
-                PlaylistDetailView(playlistID: playlist.id, store: playlists)
+                PlaylistDetailView(playlistID: playlist.id, store: playlists, recent: recent)
             }
             .sheet(isPresented: $showPicker) {
                 VideoPicker(onPicked: { picked in
@@ -71,16 +94,7 @@ struct HomeView: View {
             .sheet(item: $assignBatch) { batch in
                 AddToPlaylistView(videos: batch.videos, store: playlists)
             }
-            .alert("Can’t Access Photos", isPresented: $showDeniedAlert) {
-                Button("Open Settings") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
-                    }
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("Please allow Kage Loop to access your photos in Settings to select and play videos.")
-            }
+            .photoAccessDeniedAlert(isPresented: $showDeniedAlert)
             .alert("New Playlist", isPresented: $showNewPlaylist) {
                 TextField("Name", text: $newPlaylistName)
                 Button("Create") { playlists.create(name: newPlaylistName) }
@@ -108,17 +122,52 @@ struct HomeView: View {
 
     // MARK: - Sections
 
-    @ViewBuilder
-    private var recentSection: some View {
-        if recent.items.isEmpty {
-            Section {
-                Text("No videos yet. Tap “Select Video” above to start.")
+    /// First run: one clear way in, instead of empty sections.
+    private var emptyState: some View {
+        Section {
+            VStack(spacing: 12) {
+                Image(systemName: "film.stack")
+                    .font(.system(size: 40))
+                    .foregroundStyle(.tint)
+                Text("Add your first video")
+                    .font(.headline)
+                Text("Pick videos from Photos, then loop a line A to B to practise it.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                Button("Add Videos") { selectVideos() }
+                    .buttonStyle(.borderedProminent)
+                    .padding(.top, 4)
             }
-        } else {
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 24)
+        }
+    }
+
+    /// The video last played, where it was left off: one tap to carry on.
+    @ViewBuilder
+    private var continueSection: some View {
+        if let video = recent.lastPlayed {
+            Section("Continue") {
+                NavigationLink(value: video) {
+                    ContinueRow(video: video)
+                }
+            }
+        }
+    }
+
+    /// Recent videos other than the one already offered under Continue.
+    private var recentVideos: [PickedVideo] {
+        let skipped = recent.lastPlayed?.id
+        return Array(recent.items.filter { $0.id != skipped }.prefix(recentLimit))
+    }
+
+    @ViewBuilder
+    private var recentSection: some View {
+        let videos = recentVideos
+        if !videos.isEmpty {
             Section("Recent") {
-                ForEach(Array(recent.items.prefix(recentLimit))) { video in
+                ForEach(videos) { video in
                     NavigationLink(value: video) {
                         VideoRow(
                             video: video,
@@ -126,6 +175,12 @@ struct HomeView: View {
                         )
                     }
                     .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) {
+                            recent.remove(video)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+
                         Button {
                             assignBatch = PickedBatch(videos: [video])
                         } label: {
@@ -153,12 +208,18 @@ struct HomeView: View {
                         }
                     }
                 }
-                .onDelete { recent.remove(atOffsets: $0) }
             }
         }
     }
 
+    @ViewBuilder
     private var playlistsSection: some View {
+        if !playlists.playlists.isEmpty {
+            playlistsList
+        }
+    }
+
+    private var playlistsList: some View {
         Section("Playlists") {
             ForEach(playlists.playlists) { playlist in
                 NavigationLink(value: playlist) {
@@ -194,13 +255,6 @@ struct HomeView: View {
                 }
             }
             .onDelete { playlists.delete(atOffsets: $0) }
-
-            Button {
-                newPlaylistName = ""
-                showNewPlaylist = true
-            } label: {
-                Label("New Playlist", systemImage: "plus")
-            }
         }
     }
 
@@ -221,11 +275,7 @@ struct HomeView: View {
     /// Requests photo-library permission, then opens the picker.
     private func selectVideos() {
         Task {
-            // PHAccessLevel only offers .addOnly / .readWrite — there is no
-            // read-only level, so .readWrite is required just to read the library.
-            // The app never adds to or modifies the user's photos.
-            let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
-            if status == .authorized || status == .limited {
+            if await VideoPicker.requestAccess() {
                 showPicker = true
             } else {
                 showDeniedAlert = true
