@@ -60,10 +60,10 @@ final class PracticeRulesTests: XCTestCase {
         XCTAssertEqual(summaries[today], DaySummary(english: 600, japanese: 300))
     }
 
-    func testFifteenMinutesCompletesALanguage() {
-        XCTAssertTrue(DaySummary(english: 900).isComplete(.english))
-        XCTAssertFalse(DaySummary(english: 899).isComplete(.english))
-        XCTAssertFalse(DaySummary(english: 900).isComplete(.japanese))
+    func testFiveMinutesCompletesALanguage() {
+        XCTAssertTrue(DaySummary(english: 300).isComplete(.english))
+        XCTAssertFalse(DaySummary(english: 299).isComplete(.english))
+        XCTAssertFalse(DaySummary(english: 300).isComplete(.japanese))
     }
 
     func testCountingHours() {
@@ -98,9 +98,9 @@ final class PracticeRulesTests: XCTestCase {
         XCTAssertEqual(mark(DayKey(year: 2026, month: 10, day: 4), nil), .blank)
         XCTAssertEqual(mark(DayKey(year: 2026, month: 10, day: 20), nil), .upcoming)
         XCTAssertEqual(mark(past, nil), .missed)
-        XCTAssertEqual(mark(past, DaySummary(english: 300, japanese: 300)), .missed)
-        XCTAssertEqual(mark(past, DaySummary(english: 900)), .progress(english: true, japanese: false))
-        XCTAssertEqual(mark(past, DaySummary(english: 900, japanese: 900)), .progress(english: true, japanese: true))
+        XCTAssertEqual(mark(past, DaySummary(english: 299, japanese: 299)), .missed)
+        XCTAssertEqual(mark(past, DaySummary(english: 300)), .progress(english: true, japanese: false))
+        XCTAssertEqual(mark(past, DaySummary(english: 300, japanese: 300)), .progress(english: true, japanese: true))
         // Today is never missed while it is still going.
         XCTAssertEqual(mark(today, nil), .progress(english: false, japanese: false))
         // The tracking-since day itself is included, not blank.

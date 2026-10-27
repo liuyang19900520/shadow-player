@@ -63,7 +63,7 @@ public enum DayMark: Equatable, Sendable {
 
 public enum PracticeRules {
     /// Seconds of video each language needs per day.
-    public static let goalSeconds: Double = 15 * 60
+    public static let goalSeconds: Double = 5 * 60
 
     /// Loops finished between these hours count; the rest of the night doesn't.
     public static let countingHours = 5..<23
