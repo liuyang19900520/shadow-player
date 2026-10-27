@@ -17,3 +17,11 @@ Project details and test commands are in [CLAUDE.md](CLAUDE.md); the current to-
 - `cd Packages/PhraseKit && swift test` and `cd Packages/PracticeKit && swift test`
 - `xcodebuild build -project ShadowPlayer.xcodeproj -scheme ShadowPlayer -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO -quiet`
 - Device-only behaviour (speech recognition, background audio, Picture in Picture, rotation) is confirmed only by Yang's manual test.
+
+## Release flow (Yang's standard)
+- `develop` is where work is integrated and tested. `master` always equals the version live on the App Store.
+- Every change goes `feature/*` / `claude/*` / `codex/*` → PR into `develop`. Pushes to `develop` upload a TestFlight build.
+- Yang verifies the build in TestFlight, then says "推送 App Store". Only then submit for review.
+- After Apple approves and the app is live, merge `develop` into `master` and tag `vX.Y.Z`. No release branches.
+- Urgent fix for live users: `hotfix/*` from `master` → PR into `master`, tag, then merge back into `develop`.
+- Never merge, submit for review, delete branches, or change secrets/default branch without Yang's explicit approval.
