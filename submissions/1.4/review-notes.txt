@@ -7,7 +7,7 @@ To test the core features:
 
 New in 1.4, daily close-reading check-in:
 4. In the word list, tap "Languages" and set the playlist's audio language to English or Japanese.
-5. Let an A-B section repeat three times (between 5:00 and 23:00 local time). Return to Home: the Today card shows the section's length added to that language's minutes (goal: 15 minutes per language per day).
+5. Let an A-B section repeat three times (between 5:00 and 23:00 local time). Return to Home: the Today card shows the section's length added to that language's minutes (goal: 5 minutes per language per day).
 6. Tap the Today card to open the monthly calendar, and tap a day to see its minutes and new words.
 
 Check-in data is stored only on the device. It is not synced, and the app makes no network requests of its own. There are no notifications and no account.
