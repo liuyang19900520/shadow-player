@@ -1,0 +1,23 @@
+name: asc-invite-family
+on:
+  push:
+    branches: [ci/asc-invite-family]
+jobs:
+  invite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write API key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          pip install -q pyjwt cryptography
+          bash scripts/ci/write-asc-key.sh "$RUNNER_TEMP/asc.p8"
+      - name: Invite
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          KEYFILE: ${{ runner.temp }}/asc.p8
+        run: python3 scripts/ci/asc_invite_family.py
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/asc.p8"
