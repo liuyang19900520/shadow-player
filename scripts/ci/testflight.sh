@@ -32,11 +32,27 @@ trap 'rm -f "$KEY_PATH"' EXIT
 scripts/ci/write-asc-key.sh "$KEY_PATH"
 
 AUTH=(
-  -allowProvisioningUpdates
   -authenticationKeyPath "$KEY_PATH"
   -authenticationKeyID "$ASC_KEY_ID"
   -authenticationKeyIssuerID "$ASC_ISSUER_ID"
 )
+SIGNING="${SIGNING:-manual}"
+if [[ "$SIGNING" == automatic ]]; then
+  # May create a new certificate on every fresh runner. Fallback only.
+  AUTH+=(-allowProvisioningUpdates)
+  SIGN_ARGS=(CODE_SIGN_STYLE=Automatic)
+  EXPORT_SIGNING="<key>signingStyle</key><string>automatic</string>"
+else
+  : "${PROFILE_NAME:?PROFILE_NAME is not set (run install-signing.sh first)}"
+  SIGN_ARGS=(
+    CODE_SIGN_STYLE=Manual
+    "CODE_SIGN_IDENTITY=Apple Distribution"
+    "PROVISIONING_PROFILE_SPECIFIER=$PROFILE_NAME"
+  )
+  EXPORT_SIGNING="<key>signingStyle</key><string>manual</string>
+  <key>signingCertificate</key><string>Apple Distribution</string>
+  <key>provisioningProfiles</key><dict><key>com.liuyang19900520.shadowplayer</key><string>$PROFILE_NAME</string></dict>"
+fi
 
 # --- Archive ---------------------------------------------------------------
 echo "==> Archiving build $BUILD_NUMBER"
@@ -47,7 +63,7 @@ xcodebuild archive \
   -destination 'generic/platform=iOS' \
   -archivePath "$WORK/KageLoop.xcarchive" \
   "${AUTH[@]}" \
-  CODE_SIGN_STYLE=Automatic \
+  "${SIGN_ARGS[@]}" \
   DEVELOPMENT_TEAM="$TEAM_ID" \
   CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
   -quiet
@@ -66,7 +82,7 @@ cat > "$WORK/ExportOptions.plist" <<EOF
   <key>method</key><string>app-store-connect</string>
   <key>destination</key><string>$DESTINATION</string>
   <key>teamID</key><string>$TEAM_ID</string>
-  <key>signingStyle</key><string>automatic</string>
+  $EXPORT_SIGNING
   <key>uploadSymbols</key><true/>
   <!-- Keep the build number this script chose. -->
   <key>manageAppVersionAndBuildNumber</key><false/>
