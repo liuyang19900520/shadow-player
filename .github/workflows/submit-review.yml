@@ -29,6 +29,10 @@ concurrency:
   group: submit-review
   cancel-in-progress: false
 
+
+permissions:
+  contents: read
+
 jobs:
   submit:
     runs-on: ubuntu-latest
